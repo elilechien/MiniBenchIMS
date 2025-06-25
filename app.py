@@ -90,6 +90,8 @@ def user_input_loop():
             print(f"Removed {Quantity} {Name} from {Bin_location}. Bin is now empty.")
 
         elif user_cmd == 'Open':
+            global button, counter
+
             Bin_Location = input("Which Bin do you want to open? ").strip()
             Bin_location = "Bin-" + Bin_Location
             df = pd.read_csv(csv_path)
