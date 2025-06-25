@@ -13,7 +13,6 @@ csv_path = "inventory.csv"
 SW = 17
 DT = 27
 CLK = 22
-button = False
 
 # === SHARED STATE ===
 current_bin = None
@@ -28,21 +27,25 @@ GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def button_pressed(channel):
-    global button
-    button = True
+    global button, current_adjustment, current_bin, current_name, current_quantity
+
+    df = pd.read_csv(csv_path)
+    iBin = df[df["Location"] == current_bin].index[0]
+    df.at[iBin, "Quantity"] += current_adjustment
+    df.to_csv(csv_path, index=False)
+    current_adjustment  = 0
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=300)
 
-counter = 0
 last_clk = GPIO.input(CLK)
 
 def rotary_loop():
-    global counter, last_clk
+    global current_adjustment, last_clk
     while True:
         clk_state = GPIO.input(CLK)
         if clk_state != last_clk:
             dt_state = GPIO.input(DT)
-            counter += 1 if dt_state != clk_state else -1
+            current_adjustment += 1 if dt_state != clk_state else -1
         last_clk = clk_state
         time.sleep(0.001)
 
@@ -58,10 +61,10 @@ def update_inventory_loop():
         df["Quantity"] = df["Quantity"].astype(int)
         df = get_sensor_data(df)
         df.to_csv(csv_path, index=False)
-        time.sleep(1)
+        time.sleep(5)
 
 def user_input_loop():
-    global button, counter, current_bin, current_name, current_quantity, current_adjustment
+    global button, current_adjustment, current_bin, current_name, current_quantity, current_adjustment
     while True:
         user_cmd = input("Enter command (Add, Rem, Update, Open): ").strip()
         if user_cmd == "Add":
@@ -99,31 +102,12 @@ def user_input_loop():
             current_bin = Bin_location
             current_name = df.at[iBin, "Name"]
             current_quantity = df.at[iBin, "Quantity"]
-            print(f"Current Count ({Bin_location}): {current_quantity} of {current_name}")
-            print("Enter the Inventory Adjustment Amount")
-            counter = 0
-            prev_counter = 0
-            while not button:
-                current_adjustment = counter
-                if counter != prev_counter:
-                    print(f"\rAdjustment Amount: {counter}", end="", flush=True)
-                    prev_counter = counter
-                print()
 
-            # Finalize update
-            button = False
-            new_count = current_quantity + counter
-            df.at[iBin, "Quantity"] = max(new_count, 0)
-            df.to_csv(csv_path, index=False)
-            print("Inventory Updated.")
-            print(f"New Count ({Bin_location}): {df.at[iBin, 'Quantity']} of {Name}")
-
-            # Clear state
+        elif user_cmd == "Close":
             current_bin = None
             current_name = None
             current_quantity = None
             current_adjustment = 0
-            counter = 0
 
         else:
             print("Unknown command.")
