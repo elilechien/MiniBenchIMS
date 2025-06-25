@@ -124,7 +124,7 @@ def user_input_loop():
 
             df.to_csv(csv_path, index=False)
             print("Inventory Updated.")
-            print(f"New Count ({Bin_location}): {Quantity} of {Name}")
+            print(f"New Count ({Bin_location}): {df.at[iBin, "Quantity"]} of {Name}")
 
         else:
             print("Unknown command.")
