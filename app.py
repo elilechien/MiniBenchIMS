@@ -96,6 +96,9 @@ def user_input_loop():
             Bin_location = "Bin-" + Bin_Location
             df = pd.read_csv(csv_path)
 
+            if(Bin_Location not in df["Location"].values):
+                print(f"{Bin_Location} not found in Inventory.")
+
             iBin = df[df["Location"] == Bin_location].index[0]
             Name = df.at[iBin, "Name"]
             Quantity = df.at[iBin, "Quantity"]
@@ -139,4 +142,4 @@ if __name__ == "__main__":
     threading.Thread(target=rotary_loop, daemon=True).start()
     threading.Thread(target=user_input_loop, daemon=False).start()
 
-    app.run(host="0.0.0.0", port=1)
+    app.run(host="0.0.0.0", port=5005)
