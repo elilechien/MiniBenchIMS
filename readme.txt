@@ -3,5 +3,5 @@
 
 How to run:
 
-pip3 install -r requirements.txt
+pip3 install --break-system-packages -r requirements.txt
 python3 app.py

@@ -1,5 +1,4 @@
 Flask==2.3.3
 pandas==2.0.3
-sentence-transformers==2.2.2
 numpy==1.24.3
 Werkzeug==2.3.7
