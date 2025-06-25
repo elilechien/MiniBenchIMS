@@ -112,11 +112,12 @@ def user_input_loop():
             prev_counter = 0
             while(not button):
                 if(counter != prev_counter):
-                    print(f"Adjustment Amount: {counter}")
+                    print(f"\rAdjustment Amount: {counter}", end="", flush=True)
+
                     prev_counter = counter
 
             button = False #acknowledge the button press
-            new_count = df.at[iBin, "Quantity"] - counter
+            new_count = df.at[iBin, "Quantity"] + counter
             df.at[iBin, "Quantity"] = new_count
             if(df.at[iBin, "Quantity"] < 0):
                 df.at[iBin, "Quantity"] = 0
