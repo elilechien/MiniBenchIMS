@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <title>MiniBench Dashboard</title>
+  <meta http-equiv="refresh" content="1">
+  <style>
+    body { font-family: sans-serif; background: #f0f0f0; text-align: center; padding: 2em; }
+    .box {
+      background: white;
+      display: inline-block;
+      padding: 2em;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    h1 { margin-bottom: 1em; }
+    p { font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>MiniBench Inventory Adjustment</h1>
+    {% if bin %}
+      <p><strong>Bin:</strong> {{ bin }}</p>
+      <p><strong>Part:</strong> {{ name }}</p>
+      <p><strong>Starting Qty:</strong> {{ qty }}</p>
+      <p><strong>Adjustment:</strong> {{ adjustment }}</p>
+    {% else %}
+      <p>No bin currently open</p>
+    {% endif %}
+  </div>
+</body>
+</html>
