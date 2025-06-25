@@ -119,7 +119,7 @@ def user_input_loop():
             df.at[iBin, "Quantity"] = df.at[iBin, "Quantity"] - counter
             if(df.at[iBin, "Quantity"] < 0):
                 df.at[iBin, "Quantity"] = 0
-                
+
             counter = 0
 
             df.to_csv(csv_path, index=False)
@@ -144,6 +144,6 @@ if __name__ == "__main__":
 
     threading.Thread(target=update_inventory_loop, daemon=True).start()
     threading.Thread(target=rotary_loop, daemon=True).start()
-    threading.Thread(target=user_input_loop, daemon=False).start()
 
     app.run(host="0.0.0.0", port=5005)
+    threading.Thread(target=user_input_loop, daemon=False).start()
