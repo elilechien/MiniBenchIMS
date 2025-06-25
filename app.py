@@ -64,8 +64,8 @@ def user_input_loop():
         if user_cmd == "Add":
             Name = input("Component Name: ").strip()
             Quantity = int(input("Component Quantity: ").strip())
-            Bin_Location = input("Bin Location: ").strip()
-            Bin_location = "Bin-" + Bin_Location
+            Bin_location = input("Bin Location: ").strip()
+            Bin_location = "Bin-" + Bin_location
             df = pd.read_csv(csv_path)
 
             if Bin_location in df["Location"].values:
@@ -97,13 +97,13 @@ def user_input_loop():
             df = pd.read_csv(csv_path)
 
             if(Bin_location not in df["Location"].values):
-                print(f"{Bin_Location} not found in Inventory.")
+                print(f"{Bin_location} not found in Inventory.")
                 continue
 
             iBin = df[df["Location"] == Bin_location].index[0]
             Name = df.at[iBin, "Name"]
             Quantity = df.at[iBin, "Quantity"]
-            print(f"Current Count ({Bin_Location}): {Quantity} of {Name}")
+            print(f"Current Count ({Bin_location}): {Quantity} of {Name}")
             
             #Rotary Encoder Inputer
 
@@ -124,7 +124,7 @@ def user_input_loop():
 
             df.to_csv(csv_path, index=False)
             print("Inventory Updated.")
-            print(f"New Count ({Bin_Location}): {Quantity} of {Name}")
+            print(f"New Count ({Bin_location}): {Quantity} of {Name}")
 
         else:
             print("Unknown command.")
