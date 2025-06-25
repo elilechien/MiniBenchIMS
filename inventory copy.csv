@@ -1,0 +1,55 @@
+Name,Quantity,Location
+Resistor 27Ω 0603,178,Bin-01
+Resistor 330Ω 0805,17,Bin-02
+Resistor 56000Ω 0805,484,Bin-03
+Resistor 390Ω 0603,225,Bin-04
+Resistor 1Ω 0603,157,Bin-05
+Capacitor 10pF 0603,363,Bin-06
+Resistor 470Ω 1206,497,Bin-07
+Resistor 4700000Ω 0603,239,Bin-08
+Resistor 8Ω 1206,513,Bin-09
+Resistor 680Ω 1206,57,Bin-10
+Resistor 1Ω 0805,7,Bin-11
+Resistor 220000Ω 0603,47,Bin-12
+Resistor 39Ω 0603,136,Bin-13
+MCP3008 - 10-bit ADC,8,Bin-14
+Resistor 560Ω 0805,197,Bin-15
+Resistor 12Ω 0805,178,Bin-16
+Capacitor 2.2pF 0603,328,Bin-17
+LED Green 0805,162,Bin-18
+L293D - Motor Driver,12,Bin-19
+R 50k,20,Bin-20
+Resistor 3Ω 0805,256,Bin-20
+Resistor 470000Ω 0805,183,Bin-21
+Resistor 18000Ω 0805,113,Bin-22
+Resistor 150000Ω 0805,183,Bin-23
+FDC2214 - Capacitive Sensor,410,Bin-24
+Capacitor 1nF 0805,145,Bin-25
+Resistor 819999Ω 0603,224,Bin-26
+Resistor 8199999Ω 1206,17,Bin-27
+Micro USB B,161,Bin-28
+Resistor 27000Ω 1206,134,Bin-29
+Resistor 390000Ω 0603,86,Bin-30
+Resistor 10Ω 0805,167,Bin-31
+DHT22 - Temperature & Humidity,235,Bin-32
+Resistor 100000Ω 0805,223,Bin-33
+PCF8574 - I2C I/O Expander,356,Bin-34
+Resistor 6800Ω 0603,66,Bin-35
+Resistor 33000Ω 0805,97,Bin-36
+Resistor 1800Ω 0603,85,Bin-37
+Resistor 270000Ω 1206,78,Bin-38
+Resistor 2700Ω 0805,177,Bin-39
+Capacitor 47pF 1206,200,Bin-40
+DC Power Jack,37,Bin-41
+Resistor 5600Ω 1206,482,Bin-42
+Screw Terminal 2-pin,55,Bin-43
+LM358 - Dual Op-Amp,26,Bin-44
+VL53L0X - Time of Flight,97,Bin-45
+ESP32-WROOM - WiFi/BLE SoC,93,Bin-46
+Resistor 2Ω 0603,55,Bin-47
+Resistor 270Ω 0805,123,Bin-48
+Resistor 22Ω 0805,309,Bin-49
+R 50k,107,Bin-50
+Resistor 2700000Ω 0805,326,Bin-50
+Resistor 100000 Ohms 0603,12,Bin-50
+R 500 Ohms,122,Bin-51

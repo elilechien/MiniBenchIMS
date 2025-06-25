@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<meta http-equiv="refresh" content="5">
+
+<html>
+<head>
+    <title>Sensor + Excel Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #cccccc; }
+        .table { border-collapse: collapse; width: 100%; }
+        .table th, .table td { border: 1px solid #cccccc; padding: 8px; }
+        .table th { background-color: #dfb167; }
+        .table td { background-color: #90b3ad; }
+    </style>
+</head>
+<body>
+    <h1>MiniBench Inventory Management System</h1>
+    <h3>Current Inventory</h3>
+    {{ table | safe }}
+</body>
+</html>
