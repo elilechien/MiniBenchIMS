@@ -9,41 +9,40 @@ import RPi.GPIO as GPIO
 app = Flask(__name__)
 csv_path = "inventory.csv"
 
-# pin descriptions
+### PIN DESCRIPTIONS
 SW = 17
 DT = 27
 CLK = 22
+button = False
 
+### GPIO SETUP
+
+## ROTARY ENCODER
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(CLK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def button_pressed(channel):
-    print("Button clicked")
+    global button 
+    button = True
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=300)
 
 counter = 0
 last_clk = GPIO.input(CLK)
 
-def read_encoder():
-    global last_clk, counter
-    clk_state = GPIO.input(CLK)
-    dt_state = GPIO.input(DT)
-
-    if clk_state != last_clk:
-        if dt_state != clk_state:
-            counter += 1
-        else:
-            counter -= 1
-        print("Counter:", counter)
-    last_clk = clk_state
-    time.sleep(0.001)
-
 def rotary_loop():
     while True:
-        read_encoder()
+        global last_clk, counter
+        clk_state = GPIO.input(CLK)
+
+        if clk_state != last_clk:
+            dt_state = GPIO.input(DT)
+            counter += 1 if dt_state != clk_state else -1
+        last_clk = clk_state
+        time.sleep(0.001)
+
 
 def get_sensor_data(df):
     for i, row in df.iterrows():
@@ -77,6 +76,7 @@ def user_input_loop():
                 df.to_csv(csv_path, index=False)
                 print("Inventory updated.")
         elif user_cmd == "Rem":
+
             Bin_Location = input("Bin Location: ").strip()
             Bin_location = "Bin-" + Bin_Location
             df = pd.read_csv(csv_path)
@@ -88,6 +88,35 @@ def user_input_loop():
             df.drop(iBin, inplace=True)
             df.to_csv(csv_path, index=False)
             print(f"Removed {Quantity} {Name} from {Bin_location}. Bin is now empty.")
+
+        elif user_cmd == 'Open':
+            Bin_Location = input("Which Bin do you want to open? ").strip()
+            Bin_location = "Bin-" + Bin_Location
+            df = pd.read_csv(csv_path)
+
+            iBin = df[df["Location"] == Bin_location].index[0]
+            Name = df.at[iBin, "Name"]
+            Quantity = df.at[iBin, "Quantity"]
+            print(f"Current Coutnt ({Bin_Location}): {Quantity} of {Name}")
+            
+            #Rotary Encoder Inputer
+
+            print("Enter the Inventory Adjustment Amount")
+            counter = 0
+            prev_counter = 0
+            while(not button):
+                if(counter != prev_counter):
+                    print(f"Adjustment Amount: {counter}")
+                    prev_counter = counter
+
+            button = False #acknowledge the button press
+            df.at[iBin, "Quantity"] -= counter
+            counter = 0
+
+            df.to_csv(csv_path, index=False)
+            print("Inventory Updated.")
+            print(f"New Count ({Bin_Location}): {Quantity} of {Name}")
+
         else:
             print("Unknown command.")
 
