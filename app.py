@@ -139,4 +139,4 @@ if __name__ == "__main__":
     threading.Thread(target=rotary_loop, daemon=True).start()
     threading.Thread(target=user_input_loop, daemon=False).start()
 
-    app.run(host="0.0.0.0", port=5005)
+    app.run(host="0.0.0.0", port=1)
