@@ -32,6 +32,7 @@ def button_pressed(channel):
     df = pd.read_csv(csv_path)
     iBin = df[df["Location"] == current_bin].index[0]
     df.at[iBin, "Quantity"] += current_adjustment
+    current_quantity = df.at[iBin, "Quantity"]
     df.to_csv(csv_path, index=False)
     current_adjustment  = 0
 
