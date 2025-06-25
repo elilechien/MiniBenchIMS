@@ -116,7 +116,8 @@ def user_input_loop():
                     prev_counter = counter
 
             button = False #acknowledge the button press
-            df.at[iBin, "Quantity"] = df.at[iBin, "Quantity"] - counter
+            new_count = df.at[iBin, "Quantity"] - counter
+            df.at[iBin, "Quantity"] = new_count
             if(df.at[iBin, "Quantity"] < 0):
                 df.at[iBin, "Quantity"] = 0
 
@@ -124,7 +125,7 @@ def user_input_loop():
 
             df.to_csv(csv_path, index=False)
             print("Inventory Updated.")
-            print(f"New Count ({Bin_location}): {df.at[iBin, "Quantity"]} of {Name}")
+            print(f"New Count ({Bin_location}): {new_count} of {Name}")
 
         else:
             print("Unknown command.")
