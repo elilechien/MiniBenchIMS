@@ -44,23 +44,16 @@ def rotary_loop():
     global current_adjustment, last_clk
     while True:
         clk_state = GPIO.input(CLK)
+        dt_state = GPIO.input(DT)
         if clk_state != last_clk:
-            dt_state = GPIO.input(DT)
             current_adjustment += 1 if dt_state != clk_state else -1
         last_clk = clk_state
         time.sleep(0.001)
-
-def get_sensor_data(df):
-    for i, row in df.iterrows():
-        qty = row["Quantity"] + r.randint(-10, 10)
-        df.at[i, "Quantity"] = max(qty, 0)
-    return df
 
 def update_inventory_loop():
     while True:
         df = pd.read_csv(csv_path)
         df["Quantity"] = df["Quantity"].astype(int)
-        df = get_sensor_data(df)
         df.to_csv(csv_path, index=False)
         time.sleep(5)
 
