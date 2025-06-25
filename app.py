@@ -145,5 +145,5 @@ if __name__ == "__main__":
     threading.Thread(target=update_inventory_loop, daemon=True).start()
     threading.Thread(target=rotary_loop, daemon=True).start()
 
-    app.run(host="0.0.0.0", port=5005)
     threading.Thread(target=user_input_loop, daemon=False).start()
+    app.run(host="0.0.0.0", port=5005)
