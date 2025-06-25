@@ -96,9 +96,9 @@ def user_input_loop():
             Bin_location = "Bin-" + Bin_Location
             df = pd.read_csv(csv_path)
 
-            if(Bin_Location not in df["Location"].values):
+            if(Bin_location not in df["Location"].values):
                 print(f"{Bin_Location} not found in Inventory.")
-                break
+                continue
 
             iBin = df[df["Location"] == Bin_location].index[0]
             Name = df.at[iBin, "Name"]
