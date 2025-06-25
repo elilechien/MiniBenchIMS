@@ -95,6 +95,7 @@ def user_input_loop():
                 print(f"{Bin_location} not found in Inventory.")
                 continue
 
+            iBin = df[df["Location"] == Bin_location].index[0]
             current_bin = Bin_location
             current_name = df.at[iBin, "Name"]
             current_quantity = df.at[iBin, "Quantity"]
