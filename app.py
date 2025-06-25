@@ -98,6 +98,7 @@ def user_input_loop():
 
             if(Bin_Location not in df["Location"].values):
                 print(f"{Bin_Location} not found in Inventory.")
+                break
 
             iBin = df[df["Location"] == Bin_location].index[0]
             Name = df.at[iBin, "Name"]
