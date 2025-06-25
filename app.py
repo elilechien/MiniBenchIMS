@@ -77,8 +77,8 @@ def user_input_loop():
                 print("Inventory updated.")
         elif user_cmd == "Rem":
 
-            Bin_Location = input("Bin Location: ").strip()
-            Bin_location = "Bin-" + Bin_Location
+            Bin_location = input("Bin Location: ").strip()
+            Bin_location = "Bin-" + Bin_location
             df = pd.read_csv(csv_path)
 
             iBin = df[df["Location"] == Bin_location].index[0]
@@ -92,8 +92,8 @@ def user_input_loop():
         elif user_cmd == 'Open':
             global button, counter
 
-            Bin_Location = input("Which Bin do you want to open? ").strip()
-            Bin_location = "Bin-" + Bin_Location
+            Bin_location = input("Which Bin do you want to open? ").strip()
+            Bin_location = "Bin-" + Bin_location
             df = pd.read_csv(csv_path)
 
             if(Bin_location not in df["Location"].values):
@@ -103,7 +103,7 @@ def user_input_loop():
             iBin = df[df["Location"] == Bin_location].index[0]
             Name = df.at[iBin, "Name"]
             Quantity = df.at[iBin, "Quantity"]
-            print(f"Current Coutnt ({Bin_Location}): {Quantity} of {Name}")
+            print(f"Current Count ({Bin_Location}): {Quantity} of {Name}")
             
             #Rotary Encoder Inputer
 
@@ -116,7 +116,10 @@ def user_input_loop():
                     prev_counter = counter
 
             button = False #acknowledge the button press
-            df.at[iBin, "Quantity"] -= counter
+            df.at[iBin, "Quantity"] = df.at[iBin, "Quantity"] - counter
+            if(df.at[iBin, "Quantity"] < 0):
+                df.at[iBin, "Quantity"] = 0
+                
             counter = 0
 
             df.to_csv(csv_path, index=False)
