@@ -189,6 +189,10 @@ def update_display():
         main_frame.pack(expand=True, fill="both")
         title.pack(pady=40)
         
+        # Hide the "No bin currently open" message
+        if hasattr(root, 'no_bin_label'):
+            root.no_bin_label.pack_forget()
+        
         bin_label.config(text=f"Container: {current_bin}")
         
         # Get the available width for the name label
@@ -229,9 +233,9 @@ def update_display():
         sign = "+" if current_adjustment > 0 else ""
         adj_value.config(text=f"{sign}{current_adjustment}")
     else:
-        # Hide two-column layout and show single message
+        # Hide two-column layout but keep title
         main_frame.pack_forget()
-        title.pack_forget()
+        title.pack(pady=40)
         
         # Show single centered message
         if not hasattr(root, 'no_bin_label'):
