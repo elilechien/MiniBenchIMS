@@ -306,10 +306,6 @@
                         <div class="status-label">Quantity</div>
                         <div class="status-value" id="current-quantity">{{ current_quantity or "N/A" }}</div>
                     </div>
-                    <div class="status-item">
-                        <div class="status-label">Adjustment</div>
-                        <div class="status-value" id="current-adjustment">{{ current_adjustment or "0" }}</div>
-                    </div>
                 </div>
                 
                 {% if current_bin %}
@@ -318,12 +314,11 @@
                     <h4 style="margin-bottom: 15px; color: #2c3e50;">🔧 Adjustment Controls</h4>
                     
                     <!-- Manual Adjustment Input -->
-                    <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: end; margin-bottom: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin-bottom: 15px;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="manual-adjustment">Adjustment Value:</label>
                             <input type="number" id="manual-adjustment" placeholder="Enter adjustment (e.g., -5, +10)" style="width: 100%;">
                         </div>
-                        <button class="btn" onclick="setAdjustment()" style="width: auto; padding: 12px 20px;">Set</button>
                         <button class="btn btn-success" onclick="applyAdjustment()" style="width: auto; padding: 12px 20px;">Apply</button>
                     </div>
                     
@@ -417,7 +412,6 @@
                     document.getElementById('current-bin').textContent = data.current_bin || 'No bin open';
                     document.getElementById('current-name').textContent = data.current_name || 'N/A';
                     document.getElementById('current-quantity').textContent = data.current_quantity || 'N/A';
-                    document.getElementById('current-adjustment').textContent = data.current_adjustment || '0';
                 })
                 .catch(error => console.error('Error updating status:', error));
         }
@@ -431,7 +425,7 @@
         }, 30000);
 
         // Adjustment control functions
-        function setAdjustment() {
+        function applyAdjustment() {
             const manualInput = document.getElementById('manual-adjustment');
             const value = parseInt(manualInput.value);
             
@@ -440,34 +434,12 @@
                 return;
             }
             
-            fetch('/set-adjustment', {
+            fetch('/apply-adjustment', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ adjustment: value })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateStatus();
-                    manualInput.value = '';
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error setting adjustment');
-            });
-        }
-
-        function applyAdjustment() {
-            fetch('/apply-adjustment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
             })
             .then(response => response.json())
             .then(data => {
