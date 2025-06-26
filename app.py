@@ -504,6 +504,19 @@ def start_tkinter_gui():
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
+    # Close Bin button
+    def close_bin():
+        with state_lock:
+            global current_bin_obj
+            current_bin_obj = None
+
+    close_button = tk.Button(adj_container, text="Close Bin", font=("Helvetica", 16, "bold"),
+                            fg="#FFFFFF", bg="#dc3545",
+                            command=close_bin,
+                            relief="flat", bd=0,
+                            width=12, height=2)
+    close_button.pack(pady=20)
+
     def update_display():
         with state_lock:
             local_bin = current_bin_obj.location if current_bin_obj else None
