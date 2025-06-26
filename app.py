@@ -504,6 +504,41 @@ def start_tkinter_gui():
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
+    # Open Bin input (only shown when no bin is open)
+    open_frame = tk.Frame(adj_container, bg="#1e1e1e")
+    
+    open_label = tk.Label(open_frame, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+                         anchor="center", justify="center")
+    open_label.pack(pady=(10, 5), anchor="center")
+    
+    open_entry = tk.Entry(open_frame, font=("Helvetica", 16), width=8, justify="center")
+    open_entry.pack(pady=(0, 10), anchor="center")
+    
+    def open_bin_gui():
+        bin_num = open_entry.get().strip()
+        if not bin_num:
+            return
+        
+        bin_location = f"Bin-{bin_num}"
+        with csv_lock:
+            bins = load_bins()
+            b = find_bin(bins, bin_location)
+            if b:
+                with state_lock:
+                    global current_bin_obj
+                    current_bin_obj = b
+                open_entry.delete(0, tk.END)
+            else:
+                # Could add error handling here if needed
+                pass
+    
+    open_button = tk.Button(open_frame, text="Open", font=("Helvetica", 14, "bold"),
+                           fg="#FFFFFF", bg="#007bff",
+                           command=open_bin_gui,
+                           relief="flat", bd=0,
+                           width=8, height=1)
+    open_button.pack(anchor="center")
+
     # Close Bin button
     def close_bin():
         with state_lock:
