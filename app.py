@@ -463,6 +463,4 @@ def start_tkinter_gui():
 # === THREADING ===
 threading.Thread(target=user_input_loop, daemon=True).start()
 threading.Thread(target=start_flask, daemon=True).start()
-
-# To enable the GUI, uncomment the following line:
 start_tkinter_gui()
