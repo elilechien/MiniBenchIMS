@@ -153,7 +153,7 @@ def get_current_status():
         return {
             'current_bin': current_bin,
             'current_name': current_name,
-            'current_quantity': current_quantity
+            'current_quantity': int(current_quantity) if current_quantity is not None else None
         }
 
 @app.route("/")
