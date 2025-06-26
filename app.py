@@ -1,12 +1,11 @@
 import pandas as pd
 import threading
 import time
-from flask import Flask, render_template
-import random as r
-import logging
+import tkinter as tk
 import RPi.GPIO as GPIO
+from flask import Flask
 
-app = Flask(__name__)
+# === CSV Path ===
 csv_path = "inventory.csv"
 
 # === GPIO PINS ===
@@ -19,6 +18,7 @@ current_bin = None
 current_name = None
 current_quantity = None
 current_adjustment = 0
+last_clk = GPIO.input(CLK)
 
 # === GPIO SETUP ===
 GPIO.setmode(GPIO.BCM)
@@ -27,18 +27,17 @@ GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def button_pressed(channel):
-    global button, current_adjustment, current_bin, current_name, current_quantity
-
+    global current_adjustment, current_bin, current_name, current_quantity
+    if current_bin is None:
+        return
     df = pd.read_csv(csv_path)
     iBin = df[df["Location"] == current_bin].index[0]
     df.at[iBin, "Quantity"] += current_adjustment
     current_quantity = df.at[iBin, "Quantity"]
     df.to_csv(csv_path, index=False)
-    current_adjustment  = 0
+    current_adjustment = 0
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=300)
-
-last_clk = GPIO.input(CLK)
 
 def rotary_loop():
     global current_adjustment, last_clk
@@ -58,17 +57,17 @@ def update_inventory_loop():
         time.sleep(5)
 
 def user_input_loop():
-    global button, current_adjustment, current_bin, current_name, current_quantity, current_adjustment
+    global current_bin, current_name, current_quantity, current_adjustment
     while True:
         user_cmd = input("Enter command (Add, Rem, Update, Open): ").strip()
+        df = pd.read_csv(csv_path)
+
         if user_cmd == "Add":
             Name = input("Component Name: ").strip()
             Quantity = int(input("Component Quantity: ").strip())
             Bin_location = "Bin-" + input("Bin Location: ").strip()
-            df = pd.read_csv(csv_path)
-
             if Bin_location in df["Location"].values:
-                print("Bin already occupied. Please choose a different bin.")
+                print("Bin already occupied.")
             else:
                 df.loc[len(df)] = [Name, Quantity, Bin_location]
                 df.sort_values(by="Location", inplace=True)
@@ -77,21 +76,16 @@ def user_input_loop():
 
         elif user_cmd == "Rem":
             Bin_location = "Bin-" + input("Bin Location: ").strip()
-            df = pd.read_csv(csv_path)
             iBin = df[df["Location"] == Bin_location].index[0]
-            Name = df.at[iBin, "Name"]
-            Quantity = df.at[iBin, "Quantity"]
             df.drop(iBin, inplace=True)
             df.to_csv(csv_path, index=False)
-            print(f"Removed {Quantity} {Name} from {Bin_location}. Bin is now empty.")
+            print(f"Removed {Bin_location}.")
 
-        elif user_cmd == 'Open':
-            Bin_location = "Bin-" + input("Which Bin do you want to open? ").strip()
-            df = pd.read_csv(csv_path)
+        elif user_cmd == "Open":
+            Bin_location = "Bin-" + input("Open which bin? ").strip()
             if Bin_location not in df["Location"].values:
-                print(f"{Bin_location} not found in Inventory.")
+                print(f"{Bin_location} not found.")
                 continue
-
             iBin = df[df["Location"] == Bin_location].index[0]
             current_bin = Bin_location
             current_name = df.at[iBin, "Name"]
@@ -106,31 +100,55 @@ def user_input_loop():
         else:
             print("Unknown command.")
 
+# === FLASK SERVER FOR INVENTORY ===
+app = Flask(__name__)
+
 @app.route("/")
 def index():
     try:
         df = pd.read_csv(csv_path)
-        table_html = df.to_html(classes="table", index=False)
+        return df.to_html(index=False, classes="table")
     except Exception as e:
-        table_html = f"<p>Error loading CSV: {e}</p>"
-    return render_template("index.html", table=table_html)
+        return f"<p>Error loading CSV: {e}</p>"
 
-@app.route("/dashboard")
-def dashboard():
-    return render_template(
-        "dashboard.html",
-        bin=current_bin,
-        name=current_name,
-        qty=current_quantity,
-        adjustment=current_adjustment
-    )
-
-if __name__ == "__main__":
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)
-
-    threading.Thread(target=update_inventory_loop, daemon=True).start()
-    threading.Thread(target=rotary_loop, daemon=True).start()
-    threading.Thread(target=user_input_loop, daemon=False).start()
-
+def start_flask():
     app.run(host="0.0.0.0", port=5005)
+
+# === TKINTER GUI ===
+root = tk.Tk()
+root.title("MiniBench Dashboard")
+root.attributes('-fullscreen', True)
+root.configure(bg="#f0f0f0")
+
+title = tk.Label(root, text="MiniBench Inventory Adjustment", font=("Helvetica", 32), bg="#f0f0f0")
+title.pack(pady=40)
+
+bin_label = tk.Label(root, text="", font=("Helvetica", 24), bg="#f0f0f0")
+name_label = tk.Label(root, text="", font=("Helvetica", 24), bg="#f0f0f0")
+qty_label = tk.Label(root, text="", font=("Helvetica", 24), bg="#f0f0f0")
+adj_label = tk.Label(root, text="", font=("Helvetica", 24), bg="#f0f0f0")
+
+for label in [bin_label, name_label, qty_label, adj_label]:
+    label.pack(pady=10)
+
+def update_display():
+    if current_bin:
+        bin_label.config(text=f"Bin: {current_bin}")
+        name_label.config(text=f"Part: {current_name}")
+        qty_label.config(text=f"Starting Qty: {current_quantity}")
+        adj_label.config(text=f"Adjustment: {current_adjustment}")
+    else:
+        bin_label.config(text="No bin currently open")
+        name_label.config(text="")
+        qty_label.config(text="")
+        adj_label.config(text="")
+    root.after(200, update_display)
+
+# === THREADING ===
+threading.Thread(target=rotary_loop, daemon=True).start()
+threading.Thread(target=update_inventory_loop, daemon=True).start()
+threading.Thread(target=user_input_loop, daemon=True).start()
+threading.Thread(target=start_flask, daemon=True).start()
+
+update_display()
+root.mainloop()

@@ -7,3 +7,7 @@ pip3 install --break-system-packages -r requirements.txt
 python3 app.py
 
 # sudo apt install python3-rpi.gpio if needed
+
+
+# To run the dashboard on the screen:
+@chromium-browser --kiosk http://MiniBench.local:5005/Dashboard
