@@ -8,6 +8,7 @@ import tkinter as tk
 from gpiozero import Button, RotaryEncoder
 import os
 os.environ["DISPLAY"] = ":0"
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # === CSV Path ===
 csv_path = "inventory.csv"
