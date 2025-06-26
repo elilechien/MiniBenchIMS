@@ -564,6 +564,8 @@ def start_tkinter_gui():
             title.pack(pady=40)
             if hasattr(root, 'no_bin_label'):
                 root.no_bin_label.pack_forget()
+            # Hide open bin input when bin is open
+            open_frame.pack_forget()
             bin_label.config(text=f"{local_bin}")
             available_width = name_label.winfo_width()
             if available_width <= 1:
@@ -601,6 +603,8 @@ def start_tkinter_gui():
                 root.no_bin_label.pack(expand=True, fill="both")
             else:
                 root.no_bin_label.pack(expand=True, fill="both")
+            # Show open bin input when no bin is open
+            open_frame.pack(pady=20)
         root.after(200, update_display)
 
     update_display()
