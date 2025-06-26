@@ -146,6 +146,19 @@ root.title("MiniBench Dashboard")
 root.attributes('-fullscreen', True)
 root.configure(bg="#1e1e1e")
 
+# Exit button in top-right corner
+def exit_app():
+    root.quit()
+    root.destroy()
+    os._exit(0)  # Force exit all threads
+
+exit_button = tk.Button(root, text="X", font=("Helvetica", 16, "bold"), 
+                       fg="#FFFFFF", bg="#FF4444", 
+                       command=exit_app, 
+                       relief="flat", bd=0,
+                       width=3, height=1)
+exit_button.place(relx=0.98, rely=0.02, anchor="ne")
+
 # Top title
 title = tk.Label(root, text="MiniBench Inventory", font=("Helvetica", 36, "bold"),
                 fg="#FFD700", bg="#1e1e1e")
