@@ -35,8 +35,9 @@ GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 last_clk = GPIO.input(CLK)
+last_sw = GPIO.input(SW)
 
-def button_pressed(channel):
+def button_pressed():
     global current_adjustment, current_bin, current_name, current_quantity
     with state_lock:
         if current_bin is None:
@@ -65,18 +66,25 @@ def button_pressed(channel):
                 current_quantity = new_quantity
                 current_adjustment = 0
 
-GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=300)
-
 def rotary_loop():
-    global current_adjustment, last_clk
+    global current_adjustment, last_clk, last_sw
     while True:
         clk_state = GPIO.input(CLK)
         dt_state = GPIO.input(DT)
+        sw_state = GPIO.input(SW)
+        
+        # Handle rotary encoder
         if clk_state != last_clk:
             with state_lock:
                 if current_bin is not None:
                     current_adjustment += 1 if dt_state != clk_state else -1
         last_clk = clk_state
+        
+        # Handle button press (falling edge detection)
+        if last_sw == GPIO.HIGH and sw_state == GPIO.LOW:
+            button_pressed()
+        last_sw = sw_state
+        
         time.sleep(0.001)
 
 def update_inventory_loop():
