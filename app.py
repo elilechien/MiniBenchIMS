@@ -185,6 +185,10 @@ adj_value.pack(anchor="center")
 # === Update display loop ===
 def update_display():
     if current_bin:
+        # Show two-column layout when bin is open
+        main_frame.pack(expand=True, fill="both")
+        title.pack(pady=40)
+        
         bin_label.config(text=f"Container: {current_bin}")
         
         # Get the available width for the name label
@@ -225,13 +229,18 @@ def update_display():
         sign = "+" if current_adjustment > 0 else ""
         adj_value.config(text=f"{sign}{current_adjustment}")
     else:
-        bin_label.config(text="No bin currently open")
-        name_label.config(text="", font=("Helvetica", 28))
-        qty_label.config(text="")
+        # Hide two-column layout and show single message
+        main_frame.pack_forget()
+        title.pack_forget()
         
-        # Hide adjustment counter and show "No Container Open"
-        adj_label_text.config(text="")
-        adj_value.config(text="No Container Open", font=("Helvetica", 28))
+        # Show single centered message
+        if not hasattr(root, 'no_bin_label'):
+            root.no_bin_label = tk.Label(root, text="No bin currently open", 
+                                        font=("Helvetica", 48, "bold"),
+                                        fg="#FFD700", bg="#1e1e1e")
+            root.no_bin_label.pack(expand=True, fill="both")
+        else:
+            root.no_bin_label.pack(expand=True, fill="both")
 
     root.after(200, update_display)
 
