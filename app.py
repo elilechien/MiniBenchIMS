@@ -661,7 +661,6 @@ def start_tkinter_gui():
             close_button.pack_forget()
             # Show open bin input when no bin is open
             open_frame.pack(pady=(20, 5), anchor="center")
-            open_entry.pack(pady=(0, 10), anchor="center")
             open_entry.focus_set()
         root.after(200, update_display)
 
