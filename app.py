@@ -142,15 +142,15 @@ def user_input_loop():
             Bin_location = "Bin-" + input("Open which bin? ").strip()
 
             with csv_lock:
-                df = pd.read_csv(csv_path)
-                if Bin_location not in df["Location"].values:
+                bins = load_bins()
+                b = find_bin(bins, Bin_location)
+                if not b:
                     print(f"{Bin_location} not found.")
                     continue
-                iBin = df[df["Location"] == Bin_location].index[0]
 
             with state_lock:
                 global current_bin_obj
-                current_bin_obj = df.iloc[iBin].to_dict()
+                current_bin_obj = b
 
         elif user_cmd == "Close":
             with state_lock:
