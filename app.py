@@ -170,9 +170,9 @@ def get_current_status():
     with state_lock:
         if current_bin_obj:
             return {
-                'current_bin': current_bin_obj['Location'],
-                'current_name': current_bin_obj['Name'],
-                'current_quantity': int(current_bin_obj['Quantity'])
+                'current_bin': current_bin_obj.location,
+                'current_name': current_bin_obj.name,
+                'current_quantity': int(current_bin_obj.quantity)
             }
         else:
             return {
@@ -311,9 +311,9 @@ def close_bin():
 def get_status():
     with state_lock:
         status = {
-            'current_bin': current_bin_obj['Location'] if current_bin_obj else None,
-            'current_name': current_bin_obj['Name'] if current_bin_obj else None,
-            'current_quantity': int(current_bin_obj['Quantity']) if current_bin_obj else None
+            'current_bin': current_bin_obj.location if current_bin_obj else None,
+            'current_name': current_bin_obj.name if current_bin_obj else None,
+            'current_quantity': int(current_bin_obj.quantity) if current_bin_obj else None
         }
     return jsonify(status)
 
@@ -327,7 +327,7 @@ def apply_adjustment():
     with state_lock:
         if current_bin_obj is None:
             return jsonify({'success': False, 'error': 'No bin currently open'})
-        local_bin = current_bin_obj['Location']
+        local_bin = current_bin_obj.location
     with csv_lock:
         bins = load_bins()
         b = find_bin(bins, local_bin)
@@ -419,9 +419,9 @@ def start_tkinter_gui():
 
     def update_display():
         with state_lock:
-            local_bin = current_bin_obj['Location'] if current_bin_obj else None
-            local_name = current_bin_obj['Name'] if current_bin_obj else None
-            local_quantity = current_bin_obj['Quantity'] if current_bin_obj else None
+            local_bin = current_bin_obj.location if current_bin_obj else None
+            local_name = current_bin_obj.name if current_bin_obj else None
+            local_quantity = current_bin_obj.quantity if current_bin_obj else None
             local_adjustment = current_adjustment
         
         if local_bin:
