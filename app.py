@@ -509,7 +509,8 @@ def start_tkinter_gui():
                          anchor="center", justify="center")
     open_label.pack(pady=(20, 5), anchor="center")
     
-    open_entry = tk.Entry(adj_container, font=("Helvetica", 16), width=8, justify="center")
+    open_entry = tk.Entry(adj_container, font=("Helvetica", 16), width=8, justify="center",
+                         bg="white", fg="black", relief="solid", bd=2)
     open_entry.pack(pady=(0, 10), anchor="center")
     
     def open_bin_gui():
@@ -530,12 +531,27 @@ def start_tkinter_gui():
                 # Could add error handling here if needed
                 pass
     
+    def test_entry():
+        # Test function to verify entry field exists
+        print(f"Entry field exists: {open_entry}")
+        print(f"Entry field is mapped: {open_entry.winfo_ismapped()}")
+        print(f"Entry field geometry: {open_entry.winfo_geometry()}")
+        open_entry.insert(0, "TEST")
+    
     open_button = tk.Button(adj_container, text="Open", font=("Helvetica", 14, "bold"),
                            fg="#FFFFFF", bg="#007bff",
                            command=open_bin_gui,
                            relief="flat", bd=0,
                            width=8, height=1)
     open_button.pack(anchor="center")
+    
+    # Test button to verify entry field
+    test_button = tk.Button(adj_container, text="Test", font=("Helvetica", 12),
+                           fg="#FFFFFF", bg="#FF8800",
+                           command=test_entry,
+                           relief="flat", bd=0,
+                           width=6, height=1)
+    test_button.pack(anchor="center", pady=5)
 
     # Close Bin button
     def close_bin():
@@ -566,6 +582,7 @@ def start_tkinter_gui():
             open_label.pack_forget()
             open_entry.pack_forget()
             open_button.pack_forget()
+            test_button.pack_forget()
             bin_label.config(text=f"{local_bin}")
             available_width = name_label.winfo_width()
             if available_width <= 1:
@@ -610,6 +627,8 @@ def start_tkinter_gui():
                 open_entry.pack(pady=(0, 10), anchor="center")
             if not open_button.winfo_ismapped():
                 open_button.pack(anchor="center")
+            if not test_button.winfo_ismapped():
+                test_button.pack(anchor="center", pady=5)
         root.after(200, update_display)
 
     update_display()
