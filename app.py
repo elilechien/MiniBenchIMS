@@ -62,14 +62,20 @@ def button_pressed(channel=None):
 # === Add GPIO event detect ===
 button.when_pressed = button_pressed
 
-def rotary_moved():
-    global current_adjustment
+def rotary_cw():
     with state_lock:
         if current_bin is not None:
-            # Each event is one step, direction is handled by value (+1 or -1)
-            current_adjustment += encoder.value  # encoder.value is +1 or -1 per event
+            current_adjustment += 1
+    print("Rotary encoder: Clockwise")
 
-encoder.when_rotated = rotary_moved
+def rotary_ccw():
+    with state_lock:
+        if current_bin is not None:
+            current_adjustment -= 1
+    print("Rotary encoder: Counter-clockwise")
+
+encoder.when_rotated_clockwise = rotary_cw
+encoder.when_rotated_counter_clockwise = rotary_ccw
 
 def update_inventory_loop():
     while True:
