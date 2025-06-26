@@ -541,6 +541,10 @@ def start_tkinter_gui():
                            width=8, height=1)
     open_button.pack(anchor="center")
 
+    # Pack open label, entry, and button initially (they'll be hidden later if a bin is open)
+    open_label.pack(pady=(20, 5), anchor="center")
+    open_entry.pack(pady=(0, 10), anchor="center")
+    open_button.pack(anchor="center")
     # Close Bin button
     def close_bin():
         with state_lock:
