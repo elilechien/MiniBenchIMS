@@ -153,7 +153,7 @@ left_frame.grid(row=0, column=0, sticky="nsew", padx=60)
 bin_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#00BFFF", bg="#1e1e1e",
                      anchor="w", justify="left")
 name_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#ADFF2F", bg="#1e1e1e",
-                      anchor="w", justify="left", wraplength=500)
+                      anchor="w", justify="left")
 qty_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#FF69B4", bg="#1e1e1e",
                      anchor="w", justify="left")
 
@@ -176,13 +176,21 @@ def update_display():
     if current_bin:
         bin_label.config(text=f"Bin: {current_bin}")
         
-        # Dynamic font scaling for part name
+        # Handle long part names
         part_text = f"Part: {current_name}"
-        if len(part_text) > 30:
-            # Scale font size based on text length
-            font_size = max(12, 28 - (len(part_text) - 30) // 2)
+        
+        # If text is extremely long, truncate it
+        if len(part_text) > 50:
+            # Truncate to 47 characters and add "..."
+            truncated_name = current_name[:44] + "..." if len(current_name) > 44 else current_name
+            part_text = f"Part: {truncated_name}"
+            name_label.config(text=part_text, font=("Helvetica", 28))
+        elif len(part_text) > 30:
+            # Scale font size for moderately long text
+            font_size = max(16, 28 - (len(part_text) - 30) // 2)
             name_label.config(text=part_text, font=("Helvetica", font_size))
         else:
+            # Normal size for short text
             name_label.config(text=part_text, font=("Helvetica", 28))
             
         qty_label.config(text=f"Qty: {current_quantity}")
