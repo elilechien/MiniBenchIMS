@@ -37,7 +37,6 @@ last_clk = GPIO.input(CLK)
 
 def button_pressed(channel=None):
     global current_adjustment, current_bin, current_name, current_quantity
-    print("Button pressed!")
     with state_lock:
         if current_bin is None:
             return
@@ -65,6 +64,7 @@ def button_pressed(channel=None):
                 current_adjustment = 0
 
 # === Add GPIO event detect ===
+print("button_pressed =", button_pressed, type(button_pressed))
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=200)
 
 def rotary_loop():
