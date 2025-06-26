@@ -176,22 +176,36 @@ def update_display():
     if current_bin:
         bin_label.config(text=f"Bin: {current_bin}")
         
-        # Handle long part names
+        # Get the available width for the name label
+        available_width = name_label.winfo_width()
+        if available_width <= 1:  # Widget not yet rendered
+            available_width = 400  # Default estimate
+        
         part_text = f"Part: {current_name}"
         
-        # If text is extremely long, truncate it
-        if len(part_text) > 50:
-            # Truncate to 47 characters and add "..."
-            truncated_name = current_name[:44] + "..." if len(current_name) > 44 else current_name
-            part_text = f"Part: {truncated_name}"
-            name_label.config(text=part_text, font=("Helvetica", 28))
-        elif len(part_text) > 30:
-            # Scale font size for moderately long text
-            font_size = max(16, 28 - (len(part_text) - 30) // 2)
-            name_label.config(text=part_text, font=("Helvetica", font_size))
+        # Try different font sizes to fit the text
+        font_sizes = [28, 24, 20, 16, 14, 12, 10]
+        fitted_text = part_text
+        
+        for font_size in font_sizes:
+            test_font = ("Helvetica", font_size)
+            # Create a temporary label to measure text width
+            temp_label = tk.Label(root, text=part_text, font=test_font)
+            temp_label.update_idletasks()
+            text_width = temp_label.winfo_reqwidth()
+            temp_label.destroy()
+            
+            if text_width <= available_width - 20:  # Leave some margin
+                fitted_text = part_text
+                name_label.config(text=fitted_text, font=test_font)
+                break
         else:
-            # Normal size for short text
-            name_label.config(text=part_text, font=("Helvetica", 28))
+            # If no font size fits, truncate the text
+            max_chars = available_width // 8  # Rough estimate of chars per pixel
+            if len(part_text) > max_chars:
+                truncated_name = current_name[:max_chars-7] + "..."  # Account for "Part: " prefix
+                fitted_text = f"Part: {truncated_name}"
+            name_label.config(text=fitted_text, font=("Helvetica", 28))
             
         qty_label.config(text=f"Qty: {current_quantity}")
     else:
