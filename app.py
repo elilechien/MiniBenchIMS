@@ -151,10 +151,15 @@ app = Flask(__name__)
 def get_current_status():
     """Helper function to get current status with thread safety"""
     with state_lock:
+        qty = current_quantity
+        try:
+            qty = int(qty) if qty is not None else None
+        except Exception:
+            qty = None
         return {
             'current_bin': current_bin,
             'current_name': current_name,
-            'current_quantity': int(current_quantity) if current_quantity is not None else None
+            'current_quantity': qty
         }
 
 @app.route("/")
