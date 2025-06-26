@@ -14,56 +14,89 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 csv_path = "inventory.csv"
 
 # === SHARED STATE ===
-current_bin = None
-current_name = None
-current_quantity = None
+current_bin_obj = None
 current_adjustment = 0
 
 # === THREAD SYNCHRONIZATION ===
 state_lock = threading.Lock()
 csv_lock = threading.Lock()
 
+# --- Bin class definition ---
+class Bin:
+    def __init__(self, name, quantity, location):
+        self.name = name
+        self.quantity = int(quantity)
+        self.location = location
+
+    def adjust_quantity(self, amount):
+        self.quantity += amount
+
+    def to_dict(self):
+        return {
+            'Name': self.name,
+            'Quantity': self.quantity,
+            'Location': self.location
+        }
+
+    @staticmethod
+    def from_dict(d):
+        return Bin(d['Name'], d['Quantity'], d['Location'])
+
+# --- Helper functions for CSV <-> Bin ---
+def load_bins():
+    try:
+        df = pd.read_csv(csv_path)
+        return [Bin.from_dict(row) for row in df.to_dict(orient='records')]
+    except Exception:
+        return []
+
+def save_bins(bins):
+    df = pd.DataFrame([b.to_dict() for b in bins])
+    df.to_csv(csv_path, index=False)
+
+# --- Helper to find a bin by location ---
+def find_bin(bins, location):
+    for b in bins:
+        if b.location == location:
+            return b
+    return None
 
 # === ROTARY ENCODER SETUP ===
 def button_pressed(channel=None):
-    global current_adjustment, current_bin, current_name, current_quantity
+    global current_adjustment, current_bin_obj
     with state_lock:
-        if current_bin is None:
+        if current_bin_obj is None:
             return
-        local_bin = current_bin
+        local_bin = current_bin_obj.location
         local_adjustment = current_adjustment
-    
     with csv_lock:
-        df = pd.read_csv(csv_path)
-        iBin = df[df["Location"] == local_bin].index[0]
-        df.at[iBin, "Quantity"] += local_adjustment
-
-        if(df.at[iBin, "Quantity"] <= 0):
-            #remove the bin from the csv
-            df.drop(iBin, inplace=True)
-            df.to_csv(csv_path, index=False)
+        bins = load_bins()
+        b = find_bin(bins, local_bin)
+        if not b:
+            return
+        b.adjust_quantity(local_adjustment)
+        if b.quantity <= 0:
+            bins.remove(b)
+            save_bins(bins)
             with state_lock:
-                current_bin = None
-                current_name = None
-                current_quantity = None
+                current_bin_obj = None
                 current_adjustment = 0
         else:
-            new_quantity = df.at[iBin, "Quantity"]
-            df.to_csv(csv_path, index=False)
+            save_bins(bins)
             with state_lock:
-                current_quantity = int(new_quantity)
+                current_bin_obj = b
                 current_adjustment = 0
 
 def rotary_cw():
     global current_adjustment
     with state_lock:
-        if current_bin is not None:
+        if current_bin_obj is not None:
             current_adjustment += 1
 
 def rotary_ccw():
     global current_adjustment
     with state_lock:
-        if current_bin is not None:
+        if current_bin_obj is not None:
             current_adjustment -= 1
 
 # define RE GPIO pins and event detects
@@ -75,7 +108,7 @@ encoder.when_rotated_clockwise = rotary_cw
 encoder.when_rotated_counter_clockwise = rotary_ccw
 
 def user_input_loop():
-    global current_bin, current_name, current_quantity, current_adjustment
+    global current_bin_obj, current_adjustment
     time.sleep(2)
     while True:
         user_cmd = input("Enter command (Add, Rem, Update, Open): ").strip()
@@ -119,16 +152,12 @@ def user_input_loop():
                 iBin = df[df["Location"] == Bin_location].index[0]
 
             with state_lock:
-                global current_bin, current_name, current_quantity
-                current_bin = Bin_location
-                current_name = df.at[iBin, "Name"]
-                current_quantity = int(df.at[iBin, "Quantity"])
+                global current_bin_obj
+                current_bin_obj = df.iloc[iBin].to_dict()
 
         elif user_cmd == "Close":
             with state_lock:
-                current_bin = None
-                current_name = None
-                current_quantity = None
+                current_bin_obj = None
                 current_adjustment = 0
 
         else:
@@ -138,18 +167,19 @@ def user_input_loop():
 app = Flask(__name__)
 
 def get_current_status():
-    """Helper function to get current status with thread safety"""
     with state_lock:
-        qty = current_quantity
-        try:
-            qty = int(qty) if qty is not None else None
-        except Exception:
-            qty = None
-        return {
-            'current_bin': current_bin,
-            'current_name': current_name,
-            'current_quantity': qty
-        }
+        if current_bin_obj:
+            return {
+                'current_bin': current_bin_obj['Location'],
+                'current_name': current_bin_obj['Name'],
+                'current_quantity': int(current_bin_obj['Quantity'])
+            }
+        else:
+            return {
+                'current_bin': None,
+                'current_name': None,
+                'current_quantity': None
+            }
 
 @app.route("/")
 def index():
@@ -171,120 +201,109 @@ def add_item():
             try:
                 quantity = int(quantity)
                 bin_location = f"Bin-{bin_location}"
-                
                 with csv_lock:
-                    df = pd.read_csv(csv_path)
-                    if bin_location in df["Location"].values:
+                    bins = load_bins()
+                    if find_bin(bins, bin_location):
                         return render_template("index.html", 
-                                             table=df.to_html(index=False, classes="table"),
+                                             table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
                                              error="Bin already occupied.",
                                              **get_current_status())
-                    else:
-                        df.loc[len(df)] = [name, quantity, bin_location]
-                        df.sort_values(by="Location", inplace=True)
-                        df.to_csv(csv_path, index=False)
-                        return render_template("index.html", 
-                                             table=df.to_html(index=False, classes="table"),
-                                             success="Inventory updated successfully.",
-                                             **get_current_status())
+                    new_bin = Bin(name, quantity, bin_location)
+                    bins.append(new_bin)
+                    bins.sort(key=lambda b: b.location)
+                    save_bins(bins)
+                    with state_lock:
+                        global current_bin_obj
+                        current_bin_obj = new_bin
+                    return render_template("index.html", 
+                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                         success="Inventory updated successfully.",
+                                         **get_current_status())
             except ValueError:
                 return render_template("index.html", 
-                                     table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                     table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
                                      error="Invalid quantity. Please enter a number.",
                                      **get_current_status())
         else:
             return render_template("index.html", 
-                                 table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                 table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
                                  error="All fields are required.",
                                  **get_current_status())
     
     return render_template("index.html", 
-                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                         table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
                          **get_current_status())
 
 @app.route("/remove", methods=['GET', 'POST'])
 def remove_item():
     if request.method == 'POST':
         bin_location = request.form.get('bin_location', '').strip()
-        
         if bin_location:
             bin_location = f"Bin-{bin_location}"
-            
             with csv_lock:
-                df = pd.read_csv(csv_path)
-                if bin_location in df["Location"].values:
-                    iBin = df[df["Location"] == bin_location].index[0]
-                    df.drop(iBin, inplace=True)
-                    df.to_csv(csv_path, index=False)
+                bins = load_bins()
+                b = find_bin(bins, bin_location)
+                if b:
+                    bins.remove(b)
+                    save_bins(bins)
                     return render_template("index.html", 
-                                         table=df.to_html(index=False, classes="table"),
+                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
                                          success=f"Removed {bin_location}.",
                                          **get_current_status())
                 else:
                     return render_template("index.html", 
-                                         table=df.to_html(index=False, classes="table"),
+                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
                                          error=f"{bin_location} not found.",
                                          **get_current_status())
         else:
             return render_template("index.html", 
-                                 table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                 table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
                                  error="Bin location is required.",
                                  **get_current_status())
-    
     return render_template("index.html", 
-                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                         table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
                          **get_current_status())
 
 @app.route("/open", methods=['GET', 'POST'])
 def open_bin():
     if request.method == 'POST':
         bin_location = request.form.get('bin_location', '').strip()
-        
         if bin_location:
             bin_location = f"Bin-{bin_location}"
-            
             with csv_lock:
-                df = pd.read_csv(csv_path)
-                if bin_location in df["Location"].values:
-                    iBin = df[df["Location"] == bin_location].index[0]
-                    
+                bins = load_bins()
+                b = find_bin(bins, bin_location)
+                if b:
                     with state_lock:
-                        global current_bin, current_name, current_quantity
-                        current_bin = bin_location
-                        current_name = df.at[iBin, "Name"]
-                        current_quantity = int(df.at[iBin, "Quantity"])
-                    
+                        global current_bin_obj
+                        current_bin_obj = b
                     return render_template("index.html", 
-                                         table=df.to_html(index=False, classes="table"),
-                                         success=f"Opened {bin_location} - {current_name} (Qty: {current_quantity})",
+                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                         success=f"Opened {bin_location} - {b.name} (Qty: {b.quantity})",
                                          **get_current_status())
                 else:
                     return render_template("index.html", 
-                                         table=df.to_html(index=False, classes="table"),
+                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
                                          error=f"{bin_location} not found.",
                                          **get_current_status())
         else:
             return render_template("index.html", 
-                                 table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                 table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
                                  error="Bin location is required.",
                                  **get_current_status())
-    
     return render_template("index.html", 
-                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                         table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
                          **get_current_status())
 
 @app.route("/close", methods=['POST'])
 def close_bin():
     with state_lock:
-        global current_bin, current_name, current_quantity, current_adjustment
-        current_bin = None
-        current_name = None
-        current_quantity = None
+        global current_bin_obj, current_adjustment
+        current_bin_obj = None
         current_adjustment = 0
-    
-    df = pd.read_csv(csv_path)
+    bins = load_bins()
     return render_template("index.html", 
-                         table=df.to_html(index=False, classes="table"),
+                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
                          success="Bin closed.",
                          **get_current_status())
 
@@ -292,48 +311,40 @@ def close_bin():
 def get_status():
     with state_lock:
         status = {
-            'current_bin': current_bin,
-            'current_name': current_name,
-            'current_quantity': current_quantity
+            'current_bin': current_bin_obj['Location'] if current_bin_obj else None,
+            'current_name': current_bin_obj['Name'] if current_bin_obj else None,
+            'current_quantity': int(current_bin_obj['Quantity']) if current_bin_obj else None
         }
     return jsonify(status)
 
 @app.route("/apply-adjustment", methods=['POST'])
 def apply_adjustment():
-    global current_bin, current_name, current_quantity
+    global current_bin_obj
     if not request.is_json:
         return jsonify({'success': False, 'error': 'Invalid request format'})
-    
     data = request.get_json()
     adjustment = data.get('adjustment', 0)
-    
     with state_lock:
-        if current_bin is None:
+        if current_bin_obj is None:
             return jsonify({'success': False, 'error': 'No bin currently open'})
-        local_bin = current_bin
-    
+        local_bin = current_bin_obj['Location']
     with csv_lock:
-        df = pd.read_csv(csv_path)
-        iBin = df[df["Location"] == local_bin].index[0]
-        old_quantity = df.at[iBin, "Quantity"]
-        
-        df.at[iBin, "Quantity"] += adjustment
-        new_quantity = df.at[iBin, "Quantity"]
-
-        if df.at[iBin, "Quantity"] <= 0:
-            # Remove the bin from the csv
-            df.drop(iBin, inplace=True)
-            df.to_csv(csv_path, index=False)
+        bins = load_bins()
+        b = find_bin(bins, local_bin)
+        if not b:
+            return jsonify({'success': False, 'error': 'Bin not found'})
+        b.adjust_quantity(adjustment)
+        if b.quantity <= 0:
+            bins.remove(b)
+            save_bins(bins)
             with state_lock:
-                current_bin = None
-                current_name = None
-                current_quantity = None
+                current_bin_obj = None
             return jsonify({'success': True, 'message': f'Removed {local_bin} - quantity was 0 or less'})
         else:
-            df.to_csv(csv_path, index=False)
+            save_bins(bins)
             with state_lock:
-                current_quantity = int(new_quantity)
-            return jsonify({'success': True, 'message': f'Updated {local_bin} quantity to {new_quantity}'})
+                current_bin_obj = b
+            return jsonify({'success': True, 'message': f'Updated {local_bin} quantity to {b.quantity}'})
 
 @app.route("/download")
 def download_csv():
@@ -408,9 +419,9 @@ def start_tkinter_gui():
 
     def update_display():
         with state_lock:
-            local_bin = current_bin
-            local_name = current_name
-            local_quantity = current_quantity
+            local_bin = current_bin_obj['Location'] if current_bin_obj else None
+            local_name = current_bin_obj['Name'] if current_bin_obj else None
+            local_quantity = current_bin_obj['Quantity'] if current_bin_obj else None
             local_adjustment = current_adjustment
         
         if local_bin:
