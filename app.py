@@ -39,13 +39,14 @@ def button_pressed(channel=None):
             return
         local_bin = current_bin
         local_adjustment = current_adjustment
-
+    
     with csv_lock:
         df = pd.read_csv(csv_path)
         iBin = df[df["Location"] == local_bin].index[0]
         df.at[iBin, "Quantity"] += local_adjustment
 
-        if df.at[iBin, "Quantity"] <= 0:
+        if(df.at[iBin, "Quantity"] <= 0):
+            #remove the bin from the csv
             df.drop(iBin, inplace=True)
             df.to_csv(csv_path, index=False)
             with state_lock:
@@ -57,7 +58,7 @@ def button_pressed(channel=None):
             new_quantity = df.at[iBin, "Quantity"]
             df.to_csv(csv_path, index=False)
             with state_lock:
-                current_quantity = new_quantity
+                current_quantity = int(new_quantity)
                 current_adjustment = 0
 
 # === Add GPIO event detect ===
