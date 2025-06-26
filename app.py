@@ -570,6 +570,8 @@ def start_tkinter_gui():
             title.pack(pady=40)
             if hasattr(root, 'no_bin_label'):
                 root.no_bin_label.pack_forget()
+            # Show adjustment container when bin is open
+            adj_container.pack(expand=True, fill="both")
             # Hide open bin input when bin is open
             open_label.pack_forget()
             open_entry.pack_forget()
@@ -612,6 +614,8 @@ def start_tkinter_gui():
                 root.no_bin_label.pack(expand=True, fill="both")
             else:
                 root.no_bin_label.pack(expand=True, fill="both")
+            # Hide adjustment container when no bin is open
+            adj_container.pack_forget()
             # Show open bin input when no bin is open
             open_label.pack(pady=(20, 5), anchor="center")
             open_entry.pack(pady=(0, 10), anchor="center")
