@@ -15,7 +15,6 @@ csv_path = "inventory.csv"
 
 # === SHARED STATE ===
 current_bin_obj = None
-current_adjustment = 0
 
 # === THREAD SYNCHRONIZATION ===
 state_lock = threading.Lock()
@@ -27,6 +26,7 @@ class Bin:
         self.name = name
         self.quantity = int(quantity)
         self.location = location
+        self.adjustment = 0  # Store pending adjustment for this bin
 
     def adjust_quantity(self, amount):
         self.quantity += amount
@@ -63,12 +63,12 @@ def find_bin(bins, location):
 
 # === ROTARY ENCODER SETUP ===
 def button_pressed(channel=None):
-    global current_adjustment, current_bin_obj
+    global current_bin_obj
     with state_lock:
         if current_bin_obj is None:
             return
         local_bin = current_bin_obj.location
-        local_adjustment = current_adjustment
+        local_adjustment = current_bin_obj.adjustment
     with csv_lock:
         bins = load_bins()
         b = find_bin(bins, local_bin)
@@ -80,24 +80,21 @@ def button_pressed(channel=None):
             save_bins(bins)
             with state_lock:
                 current_bin_obj = None
-                current_adjustment = 0
         else:
             save_bins(bins)
             with state_lock:
                 current_bin_obj = b
-                current_adjustment = 0
+                current_bin_obj.adjustment = 0
 
 def rotary_cw():
-    global current_adjustment
     with state_lock:
         if current_bin_obj is not None:
-            current_adjustment += 1
+            current_bin_obj.adjustment += 1
 
 def rotary_ccw():
-    global current_adjustment
     with state_lock:
         if current_bin_obj is not None:
-            current_adjustment -= 1
+            current_bin_obj.adjustment -= 1
 
 # define RE GPIO pins and event detects
 SW,DT,CLK = 17, 27, 22
@@ -108,7 +105,7 @@ encoder.when_rotated_clockwise = rotary_cw
 encoder.when_rotated_counter_clockwise = rotary_ccw
 
 def user_input_loop():
-    global current_bin_obj, current_adjustment
+    global current_bin_obj
     time.sleep(2)
     while True:
         user_cmd = input("Enter command (Add, Rem, Update, Open): ").strip()
@@ -158,7 +155,6 @@ def user_input_loop():
         elif user_cmd == "Close":
             with state_lock:
                 current_bin_obj = None
-                current_adjustment = 0
 
         else:
             print("Unknown command.")
@@ -172,13 +168,15 @@ def get_current_status():
             return {
                 'current_bin': current_bin_obj.location,
                 'current_name': current_bin_obj.name,
-                'current_quantity': int(current_bin_obj.quantity)
+                'current_quantity': int(current_bin_obj.quantity),
+                'current_adjustment': current_bin_obj.adjustment if current_bin_obj else 0
             }
         else:
             return {
                 'current_bin': None,
                 'current_name': None,
-                'current_quantity': None
+                'current_quantity': None,
+                'current_adjustment': None
             }
 
 @app.route("/")
@@ -298,9 +296,8 @@ def open_bin():
 @app.route("/close", methods=['POST'])
 def close_bin():
     with state_lock:
-        global current_bin_obj, current_adjustment
+        global current_bin_obj
         current_bin_obj = None
-        current_adjustment = 0
     bins = load_bins()
     return render_template("index.html", 
                          table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
@@ -313,7 +310,8 @@ def get_status():
         status = {
             'current_bin': current_bin_obj.location if current_bin_obj else None,
             'current_name': current_bin_obj.name if current_bin_obj else None,
-            'current_quantity': int(current_bin_obj.quantity) if current_bin_obj else None
+            'current_quantity': int(current_bin_obj.quantity) if current_bin_obj else None,
+            'current_adjustment': current_bin_obj.adjustment if current_bin_obj else None
         }
     return jsonify(status)
 
@@ -344,6 +342,7 @@ def apply_adjustment():
             save_bins(bins)
             with state_lock:
                 current_bin_obj = b
+                current_bin_obj.adjustment = 0
             return jsonify({'success': True, 'message': f'Updated {local_bin} quantity to {b.quantity}'})
 
 @app.route("/download")
@@ -422,7 +421,7 @@ def start_tkinter_gui():
             local_bin = current_bin_obj.location if current_bin_obj else None
             local_name = current_bin_obj.name if current_bin_obj else None
             local_quantity = current_bin_obj.quantity if current_bin_obj else None
-            local_adjustment = current_adjustment
+            local_adjustment = current_bin_obj.adjustment if current_bin_obj else None
         
         if local_bin:
             main_frame.pack(expand=True, fill="both")
