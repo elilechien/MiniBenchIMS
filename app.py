@@ -138,7 +138,7 @@ def start_flask():
     import logging
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
-    app.run(host="0.0.0.0", port=80)
+    app.run(host="0.0.0.0", port=5000)
 
 # === TKINTER GUI ===
 root = tk.Tk()
