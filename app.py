@@ -512,11 +512,9 @@ def start_tkinter_gui():
     # Open Bin input - add to right_container
     open_label = tk.Label(right_container, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                          anchor="center", justify="center")
-    open_label.pack(pady=(20, 5), anchor="center")
     
     open_entry = tk.Entry(right_container, font=("Helvetica", 16), width=8, justify="center",
                          bg="white", fg="black", relief="solid", bd=2)
-    open_entry.pack(pady=(0, 10), anchor="center")
     
     def open_bin_gui():
         bin_num = open_entry.get().strip()
