@@ -175,26 +175,20 @@ adj_value.pack(anchor="e")
 def update_display():
     if current_bin:
         bin_label.config(text=f"Bin: {current_bin}")
-        name_label.config(text=f"Part: {current_name}")
+        
+        # Dynamic font scaling for part name
+        part_text = f"Part: {current_name}"
+        if len(part_text) > 30:
+            # Scale font size based on text length
+            font_size = max(12, 28 - (len(part_text) - 30) // 2)
+            name_label.config(text=part_text, font=("Helvetica", font_size))
+        else:
+            name_label.config(text=part_text, font=("Helvetica", 28))
+            
         qty_label.config(text=f"Qty: {current_quantity}")
     else:
         bin_label.config(text="No bin currently open")
-        name_label.config(text="")
-        qty_label.config(text="")
-
-    sign = "+" if current_adjustment > 0 else ""
-    adj_value.config(text=f"{sign}{current_adjustment}")
-    root.after(200, update_display)
-
-# === Update display loop ===
-def update_display():
-    if current_bin:
-        bin_label.config(text=f"Bin: {current_bin}")
-        name_label.config(text=f"Part: {current_name}")
-        qty_label.config(text=f"Qty: {current_quantity}")
-    else:
-        bin_label.config(text="No bin currently open")
-        name_label.config(text="")
+        name_label.config(text="", font=("Helvetica", 28))
         qty_label.config(text="")
 
     # Show + for positive counter
