@@ -434,6 +434,8 @@
                 return;
             }
             
+            console.log('Sending adjustment request:', value);
+            
             fetch('/apply-adjustment', {
                 method: 'POST',
                 headers: {
@@ -441,10 +443,18 @@
                 },
                 body: JSON.stringify({ adjustment: value })
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
                 if (data.success) {
                     updateStatus();
+                    manualInput.value = '';
                     // Refresh the page to show updated inventory
                     setTimeout(() => {
                         location.reload();
@@ -454,8 +464,8 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Error applying adjustment');
+                console.error('Detailed error:', error);
+                alert('Error applying adjustment: ' + error.message);
             });
         }
     </script>
