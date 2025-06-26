@@ -4,6 +4,9 @@ import time
 import tkinter as tk
 import RPi.GPIO as GPIO
 from flask import Flask
+import os
+os.environ["DISPLAY"] = ":0"
+
 
 # === CSV Path ===
 csv_path = "inventory.csv"
@@ -34,9 +37,19 @@ def button_pressed(channel):
     df = pd.read_csv(csv_path)
     iBin = df[df["Location"] == current_bin].index[0]
     df.at[iBin, "Quantity"] += current_adjustment
-    current_quantity = df.at[iBin, "Quantity"]
-    df.to_csv(csv_path, index=False)
-    current_adjustment = 0
+
+    if(df.at[iBin, "Quantity"] <= 0):
+        #remove the bin from the csv
+        df.drop(iBin, inplace=True)
+        df.to_csv(csv_path, index=False)
+        current_bin = None
+        current_name = None
+        current_quantity = None
+        current_adjustment = 0
+    else:
+        current_quantity = df.at[iBin, "Quantity"]
+        df.to_csv(csv_path, index=False)
+        current_adjustment = 0
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=300)
 
