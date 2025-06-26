@@ -28,7 +28,7 @@ csv_lock = threading.Lock()
 
 # === GPIO SETUP ===
 button = Button(SW, pull_up=True, bounce_time=0.1)
-encoder = RotaryEncoder(DT, CLK, wrap=False, max_steps=0)
+encoder = RotaryEncoder(CLK, DT,wrap=False, max_steps=0)
 
 def button_pressed(channel=None):
     global current_adjustment, current_bin, current_name, current_quantity
