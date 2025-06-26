@@ -206,7 +206,7 @@ def update_display():
         if hasattr(root, 'no_bin_label'):
             root.no_bin_label.pack_forget()
         
-        bin_label.config(text=f"Container: {current_bin}")
+        bin_label.config(text=f"{current_bin}")
         
         # Get the available width for the name label
         available_width = name_label.winfo_width()
