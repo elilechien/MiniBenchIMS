@@ -58,7 +58,7 @@ def rotary_loop():
     while True:
         clk_state = GPIO.input(CLK)
         dt_state = GPIO.input(DT)
-        if clk_state != last_clk:
+        if clk_state != last_clk and current_bin is not None:
             current_adjustment += 1 if dt_state != clk_state else -1
         last_clk = clk_state
         time.sleep(0.001)
