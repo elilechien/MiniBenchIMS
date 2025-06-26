@@ -1,9 +1,11 @@
 import pandas as pd
 import threading
 import time
+from flask import Flask, render_template, send_file
+import random as r
+import logging
 import tkinter as tk
 import RPi.GPIO as GPIO
-from flask import Flask, send_file
 import os
 os.environ["DISPLAY"] = ":0"
 
@@ -121,7 +123,8 @@ app = Flask(__name__)
 def index():
     try:
         df = pd.read_csv(csv_path)
-        return df.to_html(index=False, classes="table")
+        table_html = df.to_html(index=False, classes="table")
+        return render_template("index.html", table=table_html)
     except Exception as e:
         return f"<p>Error loading CSV: {e}</p>"
 
