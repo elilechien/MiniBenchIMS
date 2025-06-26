@@ -398,6 +398,9 @@
                     📋 Current Inventory
                     <a href="/download" download class="download-btn">⬇️ Download CSV</a>
                 </h3>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button class="btn btn-success" onclick="saveAllChanges()">💾 Save All Changes</button>
+                </div>
                 <table class="table" id="inventory-table">
                     <thead>
                         <tr>
@@ -416,9 +419,6 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn btn-success" onclick="saveAllChanges()">💾 Save All Changes</button>
-                </div>
             </div>
         </div>
     </div>
