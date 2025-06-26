@@ -219,14 +219,20 @@ def update_display():
             name_label.config(text=fitted_text, font=("Helvetica", 28))
             
         qty_label.config(text=f"Qty: {current_quantity}")
+        
+        # Show adjustment counter when bin is open
+        adj_label_text.config(text="Adjustment")
+        sign = "+" if current_adjustment > 0 else ""
+        adj_value.config(text=f"{sign}{current_adjustment}")
     else:
         bin_label.config(text="No bin currently open")
         name_label.config(text="", font=("Helvetica", 28))
         qty_label.config(text="")
+        
+        # Hide adjustment counter and show "No Container Open"
+        adj_label_text.config(text="")
+        adj_value.config(text="No Container Open", font=("Helvetica", 28))
 
-    # Show + for positive counter
-    sign = "+" if current_adjustment > 0 else ""
-    adj_value.config(text=f"{sign}{current_adjustment}")
     root.after(200, update_display)
 
 # === THREADING ===
