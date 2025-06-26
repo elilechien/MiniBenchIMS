@@ -1,7 +1,7 @@
 import pandas as pd
 import threading
 import time
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, send_file, request, jsonify
 import random as r
 import logging
 import tkinter as tk
@@ -155,6 +155,131 @@ def index():
         return render_template("index.html", table=table_html)
     except Exception as e:
         return f"<p>Error loading CSV: {e}</p>"
+
+@app.route("/add", methods=['GET', 'POST'])
+def add_item():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        quantity = request.form.get('quantity', '').strip()
+        bin_location = request.form.get('bin_location', '').strip()
+        
+        if name and quantity and bin_location:
+            try:
+                quantity = int(quantity)
+                bin_location = f"Bin-{bin_location}"
+                
+                with csv_lock:
+                    df = pd.read_csv(csv_path)
+                    if bin_location in df["Location"].values:
+                        return render_template("index.html", 
+                                             table=df.to_html(index=False, classes="table"),
+                                             error="Bin already occupied.")
+                    else:
+                        df.loc[len(df)] = [name, quantity, bin_location]
+                        df.sort_values(by="Location", inplace=True)
+                        df.to_csv(csv_path, index=False)
+                        return render_template("index.html", 
+                                             table=df.to_html(index=False, classes="table"),
+                                             success="Inventory updated successfully.")
+            except ValueError:
+                return render_template("index.html", 
+                                     table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                     error="Invalid quantity. Please enter a number.")
+        else:
+            return render_template("index.html", 
+                                 table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                 error="All fields are required.")
+    
+    return render_template("index.html", 
+                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"))
+
+@app.route("/remove", methods=['GET', 'POST'])
+def remove_item():
+    if request.method == 'POST':
+        bin_location = request.form.get('bin_location', '').strip()
+        
+        if bin_location:
+            bin_location = f"Bin-{bin_location}"
+            
+            with csv_lock:
+                df = pd.read_csv(csv_path)
+                if bin_location in df["Location"].values:
+                    iBin = df[df["Location"] == bin_location].index[0]
+                    df.drop(iBin, inplace=True)
+                    df.to_csv(csv_path, index=False)
+                    return render_template("index.html", 
+                                         table=df.to_html(index=False, classes="table"),
+                                         success=f"Removed {bin_location}.")
+                else:
+                    return render_template("index.html", 
+                                         table=df.to_html(index=False, classes="table"),
+                                         error=f"{bin_location} not found.")
+        else:
+            return render_template("index.html", 
+                                 table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                 error="Bin location is required.")
+    
+    return render_template("index.html", 
+                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"))
+
+@app.route("/open", methods=['GET', 'POST'])
+def open_bin():
+    if request.method == 'POST':
+        bin_location = request.form.get('bin_location', '').strip()
+        
+        if bin_location:
+            bin_location = f"Bin-{bin_location}"
+            
+            with csv_lock:
+                df = pd.read_csv(csv_path)
+                if bin_location in df["Location"].values:
+                    iBin = df[df["Location"] == bin_location].index[0]
+                    
+                    with state_lock:
+                        global current_bin, current_name, current_quantity
+                        current_bin = bin_location
+                        current_name = df.at[iBin, "Name"]
+                        current_quantity = df.at[iBin, "Quantity"]
+                    
+                    return render_template("index.html", 
+                                         table=df.to_html(index=False, classes="table"),
+                                         success=f"Opened {bin_location} - {current_name} (Qty: {current_quantity})")
+                else:
+                    return render_template("index.html", 
+                                         table=df.to_html(index=False, classes="table"),
+                                         error=f"{bin_location} not found.")
+        else:
+            return render_template("index.html", 
+                                 table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                                 error="Bin location is required.")
+    
+    return render_template("index.html", 
+                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"))
+
+@app.route("/close", methods=['POST'])
+def close_bin():
+    with state_lock:
+        global current_bin, current_name, current_quantity, current_adjustment
+        current_bin = None
+        current_name = None
+        current_quantity = None
+        current_adjustment = 0
+    
+    df = pd.read_csv(csv_path)
+    return render_template("index.html", 
+                         table=df.to_html(index=False, classes="table"),
+                         success="Bin closed.")
+
+@app.route("/status")
+def get_status():
+    with state_lock:
+        status = {
+            'current_bin': current_bin,
+            'current_name': current_name,
+            'current_quantity': current_quantity,
+            'current_adjustment': current_adjustment
+        }
+    return jsonify(status)
 
 @app.route("/download")
 def download_csv():
