@@ -576,6 +576,8 @@ def start_tkinter_gui():
             open_label.pack_forget()
             open_entry.pack_forget()
             open_button.pack_forget()
+            # Show close button when bin is open
+            close_button.pack(pady=20)
             bin_label.config(text=f"{local_bin}")
             available_width = name_label.winfo_width()
             if available_width <= 1:
@@ -616,6 +618,8 @@ def start_tkinter_gui():
                 root.no_bin_label.pack(expand=True, fill="both")
             # Hide adjustment container when no bin is open
             adj_container.pack_forget()
+            # Hide close button when no bin is open
+            close_button.pack_forget()
             # Show open bin input when no bin is open
             open_label.pack(pady=(20, 5), anchor="center")
             open_entry.pack(pady=(0, 10), anchor="center")
