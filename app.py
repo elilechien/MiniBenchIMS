@@ -504,14 +504,12 @@ def start_tkinter_gui():
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
-    # Open Bin input (only shown when no bin is open)
-    open_frame = tk.Frame(adj_container, bg="#1e1e1e")
-    
-    open_label = tk.Label(open_frame, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    # Open Bin input
+    open_label = tk.Label(adj_container, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                          anchor="center", justify="center")
-    open_label.pack(pady=(10, 5), anchor="center")
+    open_label.pack(pady=(20, 5), anchor="center")
     
-    open_entry = tk.Entry(open_frame, font=("Helvetica", 16), width=8, justify="center")
+    open_entry = tk.Entry(adj_container, font=("Helvetica", 16), width=8, justify="center")
     open_entry.pack(pady=(0, 10), anchor="center")
     
     def open_bin_gui():
@@ -532,15 +530,12 @@ def start_tkinter_gui():
                 # Could add error handling here if needed
                 pass
     
-    open_button = tk.Button(open_frame, text="Open", font=("Helvetica", 14, "bold"),
+    open_button = tk.Button(adj_container, text="Open", font=("Helvetica", 14, "bold"),
                            fg="#FFFFFF", bg="#007bff",
                            command=open_bin_gui,
                            relief="flat", bd=0,
                            width=8, height=1)
     open_button.pack(anchor="center")
-
-    # Initially pack the open frame
-    open_frame.pack(pady=20)
 
     # Close Bin button
     def close_bin():
@@ -568,7 +563,9 @@ def start_tkinter_gui():
             if hasattr(root, 'no_bin_label'):
                 root.no_bin_label.pack_forget()
             # Hide open bin input when bin is open
-            open_frame.pack_forget()
+            open_label.pack_forget()
+            open_entry.pack_forget()
+            open_button.pack_forget()
             bin_label.config(text=f"{local_bin}")
             available_width = name_label.winfo_width()
             if available_width <= 1:
@@ -607,7 +604,12 @@ def start_tkinter_gui():
             else:
                 root.no_bin_label.pack(expand=True, fill="both")
             # Show open bin input when no bin is open
-            open_frame.pack(pady=20)
+            if not open_label.winfo_ismapped():
+                open_label.pack(pady=(20, 5), anchor="center")
+            if not open_entry.winfo_ismapped():
+                open_entry.pack(pady=(0, 10), anchor="center")
+            if not open_button.winfo_ismapped():
+                open_button.pack(anchor="center")
         root.after(200, update_display)
 
     update_display()
