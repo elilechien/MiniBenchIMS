@@ -492,9 +492,14 @@ def start_tkinter_gui():
     right_frame = tk.Frame(main_frame, bg="#1e1e1e")
     right_frame.grid(row=0, column=1, sticky="nsew", padx=60)
     right_frame.rowconfigure(0, weight=1)
+    right_frame.columnconfigure(0, weight=1)
 
-    adj_container = tk.Frame(right_frame, bg="#1e1e1e")
-    adj_container.grid(row=0, column=0)
+    # Create a container for all right-side elements using pack
+    right_container = tk.Frame(right_frame, bg="#1e1e1e")
+    right_container.grid(row=0, column=0, sticky="nsew")
+
+    adj_container = tk.Frame(right_container, bg="#1e1e1e")
+    adj_container.pack(expand=True, fill="both")
 
     adj_label_text = tk.Label(adj_container, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                             anchor="center", justify="center")
@@ -504,12 +509,12 @@ def start_tkinter_gui():
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
-    # Open Bin input - add directly to right_frame
-    open_label = tk.Label(right_frame, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    # Open Bin input - add to right_container
+    open_label = tk.Label(right_container, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                          anchor="center", justify="center")
     open_label.pack(pady=(20, 5), anchor="center")
     
-    open_entry = tk.Entry(right_frame, font=("Helvetica", 16), width=8, justify="center",
+    open_entry = tk.Entry(right_container, font=("Helvetica", 16), width=8, justify="center",
                          bg="white", fg="black", relief="solid", bd=2)
     open_entry.pack(pady=(0, 10), anchor="center")
     
@@ -531,7 +536,7 @@ def start_tkinter_gui():
                 # Could add error handling here if needed
                 pass
     
-    open_button = tk.Button(right_frame, text="Open", font=("Helvetica", 14, "bold"),
+    open_button = tk.Button(right_container, text="Open", font=("Helvetica", 14, "bold"),
                            fg="#FFFFFF", bg="#007bff",
                            command=open_bin_gui,
                            relief="flat", bd=0,
@@ -544,7 +549,7 @@ def start_tkinter_gui():
             global current_bin_obj
             current_bin_obj = None
 
-    close_button = tk.Button(right_frame, text="Close Bin", font=("Helvetica", 16, "bold"),
+    close_button = tk.Button(right_container, text="Close Bin", font=("Helvetica", 16, "bold"),
                             fg="#FFFFFF", bg="#dc3545",
                             command=close_bin,
                             relief="flat", bd=0,
