@@ -168,13 +168,10 @@ for label in [bin_label, name_label, qty_label]:
 # === RIGHT COLUMN ===
 right_frame = tk.Frame(main_frame, bg="#1e1e1e")
 right_frame.grid(row=0, column=1, sticky="nsew", padx=60)
-right_frame.rowconfigure(0, weight=1)
-right_frame.rowconfigure(1, weight=1)
-right_frame.rowconfigure(2, weight=1)
 
 adj_label_text = tk.Label(right_frame, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                           anchor="center", justify="center")
-adj_label_text.pack(pady=(0, 10), anchor="center")
+adj_label_text.pack(pady=(0, 5), anchor="center")
 
 adj_value = tk.Label(right_frame, text="0", font=("Helvetica", 72, "bold"),
                      fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
