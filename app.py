@@ -139,30 +139,52 @@ title = tk.Label(root, text="MiniBench Inventory", font=("Helvetica", 36, "bold"
                  fg="#FFD700", bg="#1e1e1e")
 title.pack(pady=40)
 
-# Main container frame
+# Main container frame with grid
 main_frame = tk.Frame(root, bg="#1e1e1e")
-main_frame.pack(expand=True)
+main_frame.pack(expand=True, fill="both")
+
+main_frame.columnconfigure(0, weight=1)
+main_frame.columnconfigure(1, weight=1)
 
 # === LEFT COLUMN ===
 left_frame = tk.Frame(main_frame, bg="#1e1e1e")
-left_frame.pack(side="left", padx=60)
+left_frame.grid(row=0, column=0, sticky="nsew", padx=60)
 
-bin_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#00BFFF", bg="#1e1e1e")
-name_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#ADFF2F", bg="#1e1e1e")
-qty_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#FF69B4", bg="#1e1e1e")
+bin_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#00BFFF", bg="#1e1e1e",
+                     anchor="w", justify="left")
+name_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#ADFF2F", bg="#1e1e1e",
+                      anchor="w", justify="left", wraplength=500)
+qty_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#FF69B4", bg="#1e1e1e",
+                     anchor="w", justify="left")
 
 for label in [bin_label, name_label, qty_label]:
-    label.pack(pady=20, anchor="w")
+    label.pack(pady=20, anchor="w", fill="x")
 
 # === RIGHT COLUMN ===
 right_frame = tk.Frame(main_frame, bg="#1e1e1e")
-right_frame.pack(side="right", padx=60)
+right_frame.grid(row=0, column=1, sticky="nsew", padx=60)
 
 adj_label_text = tk.Label(right_frame, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e")
-adj_label_text.pack(pady=(0, 20))
+adj_label_text.pack(pady=(0, 20), anchor="e")
 
-adj_value = tk.Label(right_frame, text="0", font=("Helvetica", 72, "bold"), fg="#FFFFFF", bg="#1e1e1e")
-adj_value.pack()
+adj_value = tk.Label(right_frame, text="0", font=("Helvetica", 72, "bold"),
+                     fg="#FFFFFF", bg="#1e1e1e", anchor="e", justify="right")
+adj_value.pack(anchor="e")
+
+# === Update display loop ===
+def update_display():
+    if current_bin:
+        bin_label.config(text=f"Bin: {current_bin}")
+        name_label.config(text=f"Part: {current_name}")
+        qty_label.config(text=f"Qty: {current_quantity}")
+    else:
+        bin_label.config(text="No bin currently open")
+        name_label.config(text="")
+        qty_label.config(text="")
+
+    sign = "+" if current_adjustment > 0 else ""
+    adj_value.config(text=f"{sign}{current_adjustment}")
+    root.after(200, update_display)
 
 # === Update display loop ===
 def update_display():
