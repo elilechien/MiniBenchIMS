@@ -602,7 +602,8 @@ def start_tkinter_gui():
             sign = "+" if local_adjustment > 0 else ""
             adj_value.config(text=f"{sign}{local_adjustment}")
         else:
-            main_frame.pack_forget()
+            for child in left_frame.winfo_children():
+                child.pack_forget()
             title.pack(pady=40)
             if not hasattr(root, 'no_bin_label'):
                 root.no_bin_label = tk.Label(root, text="No bin currently open", 
