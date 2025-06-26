@@ -164,17 +164,18 @@ for label in [bin_label, name_label, qty_label]:
 right_frame = tk.Frame(main_frame, bg="#1e1e1e")
 right_frame.grid(row=0, column=1, sticky="nsew", padx=60)
 
-adj_label_text = tk.Label(right_frame, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e")
-adj_label_text.pack(pady=(0, 20), anchor="e")
+adj_label_text = tk.Label(right_frame, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
+                          anchor="center", justify="center")
+adj_label_text.pack(pady=(0, 20), anchor="center")
 
 adj_value = tk.Label(right_frame, text="0", font=("Helvetica", 72, "bold"),
-                     fg="#FFFFFF", bg="#1e1e1e", anchor="e", justify="right")
-adj_value.pack(anchor="e")
+                     fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
+adj_value.pack(anchor="center")
 
 # === Update display loop ===
 def update_display():
     if current_bin:
-        bin_label.config(text=f"Bin: {current_bin}")
+        bin_label.config(text=f"Container: {current_bin}")
         
         # Get the available width for the name label
         available_width = name_label.winfo_width()
