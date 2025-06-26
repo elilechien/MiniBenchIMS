@@ -174,11 +174,11 @@ right_frame.rowconfigure(2, weight=1)
 
 adj_label_text = tk.Label(right_frame, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                           anchor="center", justify="center")
-adj_label_text.pack(pady=(0, 20), anchor="center", expand=True)
+adj_label_text.pack(pady=(0, 10), anchor="center")
 
 adj_value = tk.Label(right_frame, text="0", font=("Helvetica", 72, "bold"),
                      fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
-adj_value.pack(anchor="center", expand=True)
+adj_value.pack(anchor="center")
 
 # === Update display loop ===
 def update_display():
