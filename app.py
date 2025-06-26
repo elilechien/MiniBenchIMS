@@ -130,9 +130,10 @@ def user_input_loop():
                 iBin = df[df["Location"] == Bin_location].index[0]
 
             with state_lock:
+                global current_bin, current_name, current_quantity
                 current_bin = Bin_location
                 current_name = df.at[iBin, "Name"]
-                current_quantity = df.at[iBin, "Quantity"]
+                current_quantity = int(df.at[iBin, "Quantity"])
 
         elif user_cmd == "Close":
             with state_lock:
@@ -257,7 +258,7 @@ def open_bin():
                         global current_bin, current_name, current_quantity
                         current_bin = bin_location
                         current_name = df.at[iBin, "Name"]
-                        current_quantity = df.at[iBin, "Quantity"]
+                        current_quantity = int(df.at[iBin, "Quantity"])
                     
                     return render_template("index.html", 
                                          table=df.to_html(index=False, classes="table"),
@@ -343,7 +344,7 @@ def apply_adjustment():
         else:
             df.to_csv(csv_path, index=False)
             with state_lock:
-                current_quantity = new_quantity
+                current_quantity = int(new_quantity)
             print(f"DEBUG: Updated quantity to {new_quantity}")
             return jsonify({'success': True, 'message': f'Updated {local_bin} quantity to {new_quantity}'})
 
