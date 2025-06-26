@@ -24,6 +24,10 @@ current_name = None
 current_quantity = None
 current_adjustment = 0
 
+# === THREAD SYNCHRONIZATION ===
+state_lock = threading.Lock()
+csv_lock = threading.Lock()
+
 # === GPIO SETUP ===
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(CLK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -34,24 +38,32 @@ last_clk = GPIO.input(CLK)
 
 def button_pressed(channel):
     global current_adjustment, current_bin, current_name, current_quantity
-    if current_bin is None:
-        return
-    df = pd.read_csv(csv_path)
-    iBin = df[df["Location"] == current_bin].index[0]
-    df.at[iBin, "Quantity"] += current_adjustment
+    with state_lock:
+        if current_bin is None:
+            return
+        local_bin = current_bin
+        local_adjustment = current_adjustment
+    
+    with csv_lock:
+        df = pd.read_csv(csv_path)
+        iBin = df[df["Location"] == local_bin].index[0]
+        df.at[iBin, "Quantity"] += local_adjustment
 
-    if(df.at[iBin, "Quantity"] <= 0):
-        #remove the bin from the csv
-        df.drop(iBin, inplace=True)
-        df.to_csv(csv_path, index=False)
-        current_bin = None
-        current_name = None
-        current_quantity = None
-        current_adjustment = 0
-    else:
-        current_quantity = df.at[iBin, "Quantity"]
-        df.to_csv(csv_path, index=False)
-        current_adjustment = 0
+        if(df.at[iBin, "Quantity"] <= 0):
+            #remove the bin from the csv
+            df.drop(iBin, inplace=True)
+            df.to_csv(csv_path, index=False)
+            with state_lock:
+                current_bin = None
+                current_name = None
+                current_quantity = None
+                current_adjustment = 0
+        else:
+            new_quantity = df.at[iBin, "Quantity"]
+            df.to_csv(csv_path, index=False)
+            with state_lock:
+                current_quantity = new_quantity
+                current_adjustment = 0
 
 GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=300)
 
@@ -60,16 +72,19 @@ def rotary_loop():
     while True:
         clk_state = GPIO.input(CLK)
         dt_state = GPIO.input(DT)
-        if clk_state != last_clk and current_bin is not None:
-            current_adjustment += 1 if dt_state != clk_state else -1
+        if clk_state != last_clk:
+            with state_lock:
+                if current_bin is not None:
+                    current_adjustment += 1 if dt_state != clk_state else -1
         last_clk = clk_state
         time.sleep(0.001)
 
 def update_inventory_loop():
     while True:
-        df = pd.read_csv(csv_path)
-        df["Quantity"] = df["Quantity"].astype(int)
-        df.to_csv(csv_path, index=False)
+        with csv_lock:
+            df = pd.read_csv(csv_path)
+            df["Quantity"] = df["Quantity"].astype(int)
+            df.to_csv(csv_path, index=False)
         time.sleep(5)
 
 def user_input_loop():
@@ -77,42 +92,56 @@ def user_input_loop():
     time.sleep(2)
     while True:
         user_cmd = input("Enter command (Add, Rem, Update, Open): ").strip()
-        df = pd.read_csv(csv_path)
+        
+        with csv_lock:
+            df = pd.read_csv(csv_path)
 
         if user_cmd == "Add":
             Name = input("Component Name: ").strip()
             Quantity = int(input("Component Quantity: ").strip())
             Bin_location = "Bin-" + input("Bin Location: ").strip()
-            if Bin_location in df["Location"].values:
-                print("Bin already occupied.")
-            else:
-                df.loc[len(df)] = [Name, Quantity, Bin_location]
-                df.sort_values(by="Location", inplace=True)
-                df.to_csv(csv_path, index=False)
-                print("Inventory updated.")
+            
+            with csv_lock:
+                df = pd.read_csv(csv_path)
+                if Bin_location in df["Location"].values:
+                    print("Bin already occupied.")
+                else:
+                    df.loc[len(df)] = [Name, Quantity, Bin_location]
+                    df.sort_values(by="Location", inplace=True)
+                    df.to_csv(csv_path, index=False)
+                    print("Inventory updated.")
 
         elif user_cmd == "Rem":
             Bin_location = "Bin-" + input("Bin Location: ").strip()
-            iBin = df[df["Location"] == Bin_location].index[0]
-            df.drop(iBin, inplace=True)
-            df.to_csv(csv_path, index=False)
-            print(f"Removed {Bin_location}.")
+            
+            with csv_lock:
+                df = pd.read_csv(csv_path)
+                iBin = df[df["Location"] == Bin_location].index[0]
+                df.drop(iBin, inplace=True)
+                df.to_csv(csv_path, index=False)
+                print(f"Removed {Bin_location}.")
 
         elif user_cmd == "Open":
             Bin_location = "Bin-" + input("Open which bin? ").strip()
-            if Bin_location not in df["Location"].values:
-                print(f"{Bin_location} not found.")
-                continue
-            iBin = df[df["Location"] == Bin_location].index[0]
-            current_bin = Bin_location
-            current_name = df.at[iBin, "Name"]
-            current_quantity = df.at[iBin, "Quantity"]
+            
+            with csv_lock:
+                df = pd.read_csv(csv_path)
+                if Bin_location not in df["Location"].values:
+                    print(f"{Bin_location} not found.")
+                    continue
+                iBin = df[df["Location"] == Bin_location].index[0]
+                
+            with state_lock:
+                current_bin = Bin_location
+                current_name = df.at[iBin, "Name"]
+                current_quantity = df.at[iBin, "Quantity"]
 
         elif user_cmd == "Close":
-            current_bin = None
-            current_name = None
-            current_quantity = None
-            current_adjustment = 0
+            with state_lock:
+                current_bin = None
+                current_name = None
+                current_quantity = None
+                current_adjustment = 0
 
         else:
             print("Unknown command.")
@@ -209,7 +238,13 @@ adj_value.pack(anchor="center")
 
 # === Update display loop ===
 def update_display():
-    if current_bin:
+    with state_lock:
+        local_bin = current_bin
+        local_name = current_name
+        local_quantity = current_quantity
+        local_adjustment = current_adjustment
+    
+    if local_bin:
         # Show two-column layout when bin is open
         main_frame.pack(expand=True, fill="both")
         title.pack(pady=40)
@@ -218,14 +253,14 @@ def update_display():
         if hasattr(root, 'no_bin_label'):
             root.no_bin_label.pack_forget()
         
-        bin_label.config(text=f"{current_bin}")
+        bin_label.config(text=f"{local_bin}")
         
         # Get the available width for the name label
         available_width = name_label.winfo_width()
         if available_width <= 1:  # Widget not yet rendered
             available_width = 400  # Default estimate
         
-        part_text = f"{current_name}"
+        part_text = f"{local_name}"
         
         # Try different font sizes to fit the text
         font_sizes = [28, 24, 20, 16, 14, 12, 10]
@@ -247,16 +282,16 @@ def update_display():
             # If no font size fits, truncate the text
             max_chars = available_width // 8  # Rough estimate of chars per pixel
             if len(part_text) > max_chars:
-                truncated_name = current_name[:max_chars-7] + "..."  # Account for "Part: " prefix
+                truncated_name = local_name[:max_chars-7] + "..."  # Account for "Part: " prefix
                 fitted_text = f"{truncated_name}"
             name_label.config(text=fitted_text, font=("Helvetica", 28))
             
-        qty_label.config(text=f"Qty: {current_quantity}")
+        qty_label.config(text=f"Qty: {local_quantity}")
         
         # Show adjustment counter when bin is open
         adj_label_text.config(text="Adjustment")
-        sign = "+" if current_adjustment > 0 else ""
-        adj_value.config(text=f"{sign}{current_adjustment}")
+        sign = "+" if local_adjustment > 0 else ""
+        adj_value.config(text=f"{sign}{local_adjustment}")
     else:
         # Hide two-column layout but keep title
         main_frame.pack_forget()
@@ -280,4 +315,5 @@ threading.Thread(target=user_input_loop, daemon=True).start()
 threading.Thread(target=start_flask, daemon=True).start()
 
 update_display()
+
 root.mainloop()
