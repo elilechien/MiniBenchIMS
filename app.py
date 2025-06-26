@@ -539,6 +539,9 @@ def start_tkinter_gui():
                            width=8, height=1)
     open_button.pack(anchor="center")
 
+    # Initially pack the open frame
+    open_frame.pack(pady=20)
+
     # Close Bin button
     def close_bin():
         with state_lock:
