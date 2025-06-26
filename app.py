@@ -544,11 +544,11 @@ def start_tkinter_gui():
     # Open Bin input - side by side layout
     open_frame = tk.Frame(right_container, bg="#1e1e1e")
     
-    open_label = tk.Label(open_frame, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    open_label = tk.Label(open_frame, text="Open Bin:", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                          anchor="center", justify="center")
-    open_label.pack(side="left", padx=(0, 10))
+    open_label.pack(side="left", padx=(0, 15))
     
-    open_entry = tk.Entry(open_frame, font=("Helvetica", 16), width=8, justify="center",
+    open_entry = tk.Entry(open_frame, font=("Helvetica", 24), width=10, justify="center",
                          bg="white", fg="black", relief="solid", bd=2)
     open_entry.pack(side="left")
     
