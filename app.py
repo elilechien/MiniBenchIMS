@@ -213,7 +213,7 @@ def update_display():
         if available_width <= 1:  # Widget not yet rendered
             available_width = 400  # Default estimate
         
-        part_text = f"Part: {current_name}"
+        part_text = f"{current_name}"
         
         # Try different font sizes to fit the text
         font_sizes = [28, 24, 20, 16, 14, 12, 10]
@@ -236,7 +236,7 @@ def update_display():
             max_chars = available_width // 8  # Rough estimate of chars per pixel
             if len(part_text) > max_chars:
                 truncated_name = current_name[:max_chars-7] + "..."  # Account for "Part: " prefix
-                fitted_text = f"Part: {truncated_name}"
+                fitted_text = f"{truncated_name}"
             name_label.config(text=fitted_text, font=("Helvetica", 28))
             
         qty_label.config(text=f"Qty: {current_quantity}")
