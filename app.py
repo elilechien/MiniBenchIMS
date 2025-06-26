@@ -18,13 +18,14 @@ current_bin = None
 current_name = None
 current_quantity = None
 current_adjustment = 0
-last_clk = GPIO.input(CLK)
 
 # === GPIO SETUP ===
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(CLK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+last_clk = GPIO.input(CLK)
 
 def button_pressed(channel):
     global current_adjustment, current_bin, current_name, current_quantity
