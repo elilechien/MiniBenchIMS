@@ -660,7 +660,7 @@ def start_tkinter_gui():
             # Hide close button when no bin is open
             close_button.pack_forget()
             # Show open bin input when no bin is open
-            open_frame.pack(pady=(20, 5), anchor="center")
+            open_frame.pack(pady=(20, 5), anchor="center", expand=True)
             open_entry.focus_set()
         root.after(200, update_display)
 
