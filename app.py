@@ -5,7 +5,7 @@ from flask import Flask, render_template, send_file
 import random as r
 import logging
 import tkinter as tk
-import RPi5.GPIO as GPIO
+import RPi.GPIO as GPIO
 import os
 os.environ["DISPLAY"] = ":0"
 
