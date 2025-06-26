@@ -2,8 +2,6 @@ import pandas as pd
 import threading
 import time
 from flask import Flask, render_template, send_file, request, jsonify
-import random as r
-import logging
 import tkinter as tk
 from gpiozero import Button, RotaryEncoder
 import os
@@ -64,19 +62,14 @@ def button_pressed(channel=None):
 # === Add GPIO event detect ===
 button.when_pressed = button_pressed
 
-def rotary_loop():
+def rotary_moved():
     global current_adjustment
-    last_steps = 0
-    while True:
-        current_steps = encoder.steps
-        if current_steps != last_steps:
-            with state_lock:
-                if current_bin is not None:
-                    # Calculate the change in steps
-                    step_change = current_steps - last_steps
-                    current_adjustment += step_change
-            last_steps = current_steps
-        time.sleep(0.001)
+    with state_lock:
+        if current_bin is not None:
+            # Each event is one step, direction is handled by value (+1 or -1)
+            current_adjustment += encoder.value  # encoder.value is +1 or -1 per event
+
+encoder.when_rotated = rotary_moved
 
 def update_inventory_loop():
     while True:
@@ -476,7 +469,6 @@ def update_display():
     root.after(200, update_display)
 
 # === THREADING ===
-threading.Thread(target=rotary_loop, daemon=True).start()
 threading.Thread(target=update_inventory_loop, daemon=True).start()
 threading.Thread(target=user_input_loop, daemon=True).start()
 threading.Thread(target=start_flask, daemon=True).start()
