@@ -151,14 +151,14 @@ left_frame = tk.Frame(main_frame, bg="#1e1e1e")
 left_frame.grid(row=0, column=0, sticky="nsew", padx=60)
 
 bin_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#00BFFF", bg="#1e1e1e",
-                     anchor="w", justify="left")
+                     anchor="center", justify="center")
 name_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#ADFF2F", bg="#1e1e1e",
-                      anchor="w", justify="left")
+                      anchor="center", justify="center")
 qty_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#FF69B4", bg="#1e1e1e",
-                     anchor="w", justify="left")
+                     anchor="center", justify="center")
 
 for label in [bin_label, name_label, qty_label]:
-    label.pack(pady=20, anchor="w", fill="x")
+    label.pack(pady=20, anchor="center", fill="x")
 
 # === RIGHT COLUMN ===
 right_frame = tk.Frame(main_frame, bg="#1e1e1e")
