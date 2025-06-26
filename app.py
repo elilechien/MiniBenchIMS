@@ -305,6 +305,7 @@ def get_status():
 
 @app.route("/apply-adjustment", methods=['POST'])
 def apply_adjustment():
+    global current_bin, current_name, current_quantity
     if not request.is_json:
         return jsonify({'success': False, 'error': 'Invalid request format'})
     
