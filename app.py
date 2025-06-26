@@ -3,7 +3,7 @@ import threading
 import time
 import tkinter as tk
 import RPi.GPIO as GPIO
-from flask import Flask
+from flask import Flask, send_file
 import os
 os.environ["DISPLAY"] = ":0"
 
@@ -125,62 +125,69 @@ def index():
     except Exception as e:
         return f"<p>Error loading CSV: {e}</p>"
 
+@app.route("/download")
+def download_csv():
+    return send_file(csv_path, as_attachment=True)
+
+
 def start_flask():
     app.run(host="0.0.0.0", port=5005)
 
-# === TKINTER GUI ===
-root = tk.Tk()
-root.title("MiniBench Dashboard")
-root.attributes('-fullscreen', True)
-root.configure(bg="#1e1e1e")
+def init_GUI():
+    # === TKINTER GUI ===
+    root = tk.Tk()
+    root.title("MiniBench Dashboard")
+    root.attributes('-fullscreen', True)
+    root.configure(bg="#1e1e1e")
 
-# Top title
-title = tk.Label(root, text="MiniBench Inventory", font=("Helvetica", 36, "bold"),
-                 fg="#FFD700", bg="#1e1e1e")
-title.pack(pady=40)
+    # Top title
+    title = tk.Label(root, text="MiniBench Inventory", font=("Helvetica", 36, "bold"),
+                    fg="#FFD700", bg="#1e1e1e")
+    title.pack(pady=40)
 
-# Main container frame with grid
-main_frame = tk.Frame(root, bg="#1e1e1e")
-main_frame.pack(expand=True, fill="both")
+    # Main container frame with grid
+    main_frame = tk.Frame(root, bg="#1e1e1e")
+    main_frame.pack(expand=True, fill="both")
 
-main_frame.columnconfigure(0, weight=1)
-main_frame.columnconfigure(1, weight=1)
-main_frame.rowconfigure(0, weight=1)
+    main_frame.columnconfigure(0, weight=1)
+    main_frame.columnconfigure(1, weight=1)
+    main_frame.rowconfigure(0, weight=1)
 
-# === LEFT COLUMN ===
-left_frame = tk.Frame(main_frame, bg="#1e1e1e")
-left_frame.grid(row=0, column=0, sticky="nsew", padx=60)
-left_frame.rowconfigure(0, weight=1)
-left_frame.rowconfigure(1, weight=1)
-left_frame.rowconfigure(2, weight=1)
-left_frame.rowconfigure(3, weight=1)
+    # === LEFT COLUMN ===
+    left_frame = tk.Frame(main_frame, bg="#1e1e1e")
+    left_frame.grid(row=0, column=0, sticky="nsew", padx=60)
+    left_frame.rowconfigure(0, weight=1)
+    left_frame.rowconfigure(1, weight=1)
+    left_frame.rowconfigure(2, weight=1)
+    left_frame.rowconfigure(3, weight=1)
 
-bin_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#00BFFF", bg="#1e1e1e",
-                     anchor="center", justify="center")
-name_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#ADFF2F", bg="#1e1e1e",
-                      anchor="center", justify="center")
-qty_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#FF69B4", bg="#1e1e1e",
-                     anchor="center", justify="center")
+    bin_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#00BFFF", bg="#1e1e1e",
+                        anchor="center", justify="center")
+    name_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#ADFF2F", bg="#1e1e1e",
+                        anchor="center", justify="center")
+    qty_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#FF69B4", bg="#1e1e1e",
+                        anchor="center", justify="center")
 
-for label in [bin_label, name_label, qty_label]:
-    label.pack(pady=20, anchor="center", fill="x", expand=True)
+    for label in [bin_label, name_label, qty_label]:
+        label.pack(pady=20, anchor="center", fill="x", expand=True)
 
-# === RIGHT COLUMN ===
-right_frame = tk.Frame(main_frame, bg="#1e1e1e")
-right_frame.grid(row=0, column=1, sticky="nsew", padx=60)
-right_frame.rowconfigure(0, weight=1)
+    # === RIGHT COLUMN ===
+    right_frame = tk.Frame(main_frame, bg="#1e1e1e")
+    right_frame.grid(row=0, column=1, sticky="nsew", padx=60)
+    right_frame.rowconfigure(0, weight=1)
 
-# Container for adjustment section
-adj_container = tk.Frame(right_frame, bg="#1e1e1e")
-adj_container.grid(row=0, column=0)
+    # Container for adjustment section
+    adj_container = tk.Frame(right_frame, bg="#1e1e1e")
+    adj_container.grid(row=0, column=0)
 
-adj_label_text = tk.Label(adj_container, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
-                          anchor="center", justify="center")
-adj_label_text.pack(pady=(0, 5), anchor="center")
+    adj_label_text = tk.Label(adj_container, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
+                            anchor="center", justify="center")
+    adj_label_text.pack(pady=(0, 5), anchor="center")
 
-adj_value = tk.Label(adj_container, text="0", font=("Helvetica", 72, "bold"),
-                     fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
-adj_value.pack(anchor="center")
+    adj_value = tk.Label(adj_container, text="0", font=("Helvetica", 72, "bold"),
+                        fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
+    adj_value.pack(anchor="center")
+init_GUI()
 
 # === Update display loop ===
 def update_display():

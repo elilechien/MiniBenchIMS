@@ -3,7 +3,7 @@
 
 <html>
 <head>
-    <title>Sensor + Excel Dashboard</title>
+    <title>MiniBench Inventory</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #cccccc; }
         .table { border-collapse: collapse; width: 100%; }
@@ -15,6 +15,13 @@
 <body>
     <h1>MiniBench Inventory Management System</h1>
     <h3>Current Inventory</h3>
+    <p>
+        <a href="/download" download>
+            <button style="font-size: 16px; padding: 10px 20px; cursor: pointer;">
+                ⬇️ Download Inventory CSV
+            </button>
+        </a>
+    </p>
     {{ table | safe }}
 </body>
 </html>
