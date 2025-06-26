@@ -147,12 +147,22 @@ def user_input_loop():
 # === FLASK SERVER FOR INVENTORY ===
 app = Flask(__name__)
 
+def get_current_status():
+    """Helper function to get current status with thread safety"""
+    with state_lock:
+        return {
+            'current_bin': current_bin,
+            'current_name': current_name,
+            'current_quantity': current_quantity,
+            'current_adjustment': current_adjustment
+        }
+
 @app.route("/")
 def index():
     try:
         df = pd.read_csv(csv_path)
         table_html = df.to_html(index=False, classes="table")
-        return render_template("index.html", table=table_html)
+        return render_template("index.html", table=table_html, **get_current_status())
     except Exception as e:
         return f"<p>Error loading CSV: {e}</p>"
 
@@ -173,25 +183,30 @@ def add_item():
                     if bin_location in df["Location"].values:
                         return render_template("index.html", 
                                              table=df.to_html(index=False, classes="table"),
-                                             error="Bin already occupied.")
+                                             error="Bin already occupied.",
+                                             **get_current_status())
                     else:
                         df.loc[len(df)] = [name, quantity, bin_location]
                         df.sort_values(by="Location", inplace=True)
                         df.to_csv(csv_path, index=False)
                         return render_template("index.html", 
                                              table=df.to_html(index=False, classes="table"),
-                                             success="Inventory updated successfully.")
+                                             success="Inventory updated successfully.",
+                                             **get_current_status())
             except ValueError:
                 return render_template("index.html", 
                                      table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
-                                     error="Invalid quantity. Please enter a number.")
+                                     error="Invalid quantity. Please enter a number.",
+                                     **get_current_status())
         else:
             return render_template("index.html", 
                                  table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
-                                 error="All fields are required.")
+                                 error="All fields are required.",
+                                 **get_current_status())
     
     return render_template("index.html", 
-                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"))
+                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                         **get_current_status())
 
 @app.route("/remove", methods=['GET', 'POST'])
 def remove_item():
@@ -209,18 +224,22 @@ def remove_item():
                     df.to_csv(csv_path, index=False)
                     return render_template("index.html", 
                                          table=df.to_html(index=False, classes="table"),
-                                         success=f"Removed {bin_location}.")
+                                         success=f"Removed {bin_location}.",
+                                         **get_current_status())
                 else:
                     return render_template("index.html", 
                                          table=df.to_html(index=False, classes="table"),
-                                         error=f"{bin_location} not found.")
+                                         error=f"{bin_location} not found.",
+                                         **get_current_status())
         else:
             return render_template("index.html", 
                                  table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
-                                 error="Bin location is required.")
+                                 error="Bin location is required.",
+                                 **get_current_status())
     
     return render_template("index.html", 
-                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"))
+                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                         **get_current_status())
 
 @app.route("/open", methods=['GET', 'POST'])
 def open_bin():
@@ -243,18 +262,22 @@ def open_bin():
                     
                     return render_template("index.html", 
                                          table=df.to_html(index=False, classes="table"),
-                                         success=f"Opened {bin_location} - {current_name} (Qty: {current_quantity})")
+                                         success=f"Opened {bin_location} - {current_name} (Qty: {current_quantity})",
+                                         **get_current_status())
                 else:
                     return render_template("index.html", 
                                          table=df.to_html(index=False, classes="table"),
-                                         error=f"{bin_location} not found.")
+                                         error=f"{bin_location} not found.",
+                                         **get_current_status())
         else:
             return render_template("index.html", 
                                  table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
-                                 error="Bin location is required.")
+                                 error="Bin location is required.",
+                                 **get_current_status())
     
     return render_template("index.html", 
-                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"))
+                         table=pd.read_csv(csv_path).to_html(index=False, classes="table"),
+                         **get_current_status())
 
 @app.route("/close", methods=['POST'])
 def close_bin():
@@ -268,7 +291,8 @@ def close_bin():
     df = pd.read_csv(csv_path)
     return render_template("index.html", 
                          table=df.to_html(index=False, classes="table"),
-                         success="Bin closed.")
+                         success="Bin closed.",
+                         **get_current_status())
 
 @app.route("/status")
 def get_status():
