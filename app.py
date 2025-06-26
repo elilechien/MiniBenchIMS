@@ -366,15 +366,6 @@ def apply_adjustment():
                 current_adjustment = 0
             return jsonify({'success': True, 'message': f'Updated {local_bin} quantity to {new_quantity}'})
 
-@app.route("/reset-adjustment", methods=['POST'])
-def reset_adjustment():
-    with state_lock:
-        if current_bin is None:
-            return jsonify({'success': False, 'error': 'No bin currently open'})
-        current_adjustment = 0
-    
-    return jsonify({'success': True, 'adjustment': 0})
-
 @app.route("/download")
 def download_csv():
     return send_file(csv_path, as_attachment=True)

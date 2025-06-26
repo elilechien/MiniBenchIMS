@@ -327,9 +327,8 @@
                         <button class="btn btn-success" onclick="applyAdjustment()" style="width: auto; padding: 12px 20px;">Apply</button>
                     </div>
                     
-                    <!-- Reset and Close -->
-                    <div style="display: grid; grid-template-columns: auto auto; gap: 10px;">
-                        <button class="btn" onclick="resetAdjustment()" style="width: auto; padding: 8px 16px;">Reset Adjustment</button>
+                    <!-- Close Bin -->
+                    <div style="text-align: center;">
                         <form method="POST" action="/close" style="display: inline;">
                             <button type="submit" class="close-btn">Close Bin</button>
                         </form>
@@ -485,28 +484,6 @@
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error applying adjustment');
-            });
-        }
-
-        function resetAdjustment() {
-            fetch('/reset-adjustment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateStatus();
-                    document.getElementById('manual-adjustment').value = '';
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error resetting adjustment');
             });
         }
     </script>
