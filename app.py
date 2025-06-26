@@ -612,12 +612,10 @@ def start_tkinter_gui():
             else:
                 root.no_bin_label.pack(expand=True, fill="both")
             # Show open bin input when no bin is open
-            if not open_label.winfo_ismapped():
-                open_label.pack(pady=(20, 5), anchor="center")
-            if not open_entry.winfo_ismapped():
-                open_entry.pack(pady=(0, 10), anchor="center")
-            if not open_button.winfo_ismapped():
-                open_button.pack(anchor="center")
+            open_label.pack(pady=(20, 5), anchor="center")
+            open_entry.pack(pady=(0, 10), anchor="center")
+            open_button.pack(anchor="center")
+            open_entry.focus_set()
         root.after(200, update_display)
 
     update_display()
