@@ -5,7 +5,7 @@ from flask import Flask, render_template, send_file
 import random as r
 import logging
 import tkinter as tk
-import RPi.GPIO as GPIO
+from gpiozero import Button, RotaryEncoder
 import os
 os.environ["DISPLAY"] = ":0"
 
@@ -28,12 +28,8 @@ state_lock = threading.Lock()
 csv_lock = threading.Lock()
 
 # === GPIO SETUP ===
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(CLK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(DT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(SW, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-last_clk = GPIO.input(CLK)
+button = Button(SW, pull_up=True, bounce_time=0.1)
+encoder = RotaryEncoder(CLK, DT, wrap=False, max_steps=0)
 
 def button_pressed(channel=None):
     global current_adjustment, current_bin, current_name, current_quantity
@@ -64,21 +60,20 @@ def button_pressed(channel=None):
                 current_adjustment = 0
 
 # === Add GPIO event detect ===
-print("button_pressed =", button_pressed, type(button_pressed))
-GPIO.add_event_detect(SW, GPIO.FALLING, callback=button_pressed, bouncetime=200)
+button.when_pressed = button_pressed
 
 def rotary_loop():
-    global current_adjustment, last_clk
+    global current_adjustment
+    last_steps = 0
     while True:
-        clk_state = GPIO.input(CLK)
-        dt_state = GPIO.input(DT)
-
-        if clk_state != last_clk:
+        current_steps = encoder.steps
+        if current_steps != last_steps:
             with state_lock:
                 if current_bin is not None:
-                    current_adjustment += 1 if dt_state != clk_state else -1
-        last_clk = clk_state
-
+                    # Calculate the change in steps
+                    step_change = current_steps - last_steps
+                    current_adjustment += step_change
+            last_steps = current_steps
         time.sleep(0.001)
 
 def update_inventory_loop():
