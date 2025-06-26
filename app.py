@@ -305,6 +305,76 @@ def get_status():
         }
     return jsonify(status)
 
+@app.route("/adjust", methods=['POST'])
+def adjust_quantity():
+    if not request.is_json:
+        return jsonify({'success': False, 'error': 'Invalid request format'})
+    
+    data = request.get_json()
+    adjustment = data.get('adjustment', 0)
+    
+    with state_lock:
+        if current_bin is None:
+            return jsonify({'success': False, 'error': 'No bin currently open'})
+        current_adjustment += adjustment
+    
+    return jsonify({'success': True, 'adjustment': current_adjustment})
+
+@app.route("/set-adjustment", methods=['POST'])
+def set_adjustment():
+    if not request.is_json:
+        return jsonify({'success': False, 'error': 'Invalid request format'})
+    
+    data = request.get_json()
+    adjustment = data.get('adjustment', 0)
+    
+    with state_lock:
+        if current_bin is None:
+            return jsonify({'success': False, 'error': 'No bin currently open'})
+        current_adjustment = adjustment
+    
+    return jsonify({'success': True, 'adjustment': current_adjustment})
+
+@app.route("/apply-adjustment", methods=['POST'])
+def apply_adjustment():
+    with state_lock:
+        if current_bin is None:
+            return jsonify({'success': False, 'error': 'No bin currently open'})
+        local_bin = current_bin
+        local_adjustment = current_adjustment
+    
+    with csv_lock:
+        df = pd.read_csv(csv_path)
+        iBin = df[df["Location"] == local_bin].index[0]
+        df.at[iBin, "Quantity"] += local_adjustment
+
+        if df.at[iBin, "Quantity"] <= 0:
+            # Remove the bin from the csv
+            df.drop(iBin, inplace=True)
+            df.to_csv(csv_path, index=False)
+            with state_lock:
+                current_bin = None
+                current_name = None
+                current_quantity = None
+                current_adjustment = 0
+            return jsonify({'success': True, 'message': f'Removed {local_bin} - quantity was 0 or less'})
+        else:
+            new_quantity = df.at[iBin, "Quantity"]
+            df.to_csv(csv_path, index=False)
+            with state_lock:
+                current_quantity = new_quantity
+                current_adjustment = 0
+            return jsonify({'success': True, 'message': f'Updated {local_bin} quantity to {new_quantity}'})
+
+@app.route("/reset-adjustment", methods=['POST'])
+def reset_adjustment():
+    with state_lock:
+        if current_bin is None:
+            return jsonify({'success': False, 'error': 'No bin currently open'})
+        current_adjustment = 0
+    
+    return jsonify({'success': True, 'adjustment': 0})
+
 @app.route("/download")
 def download_csv():
     return send_file(csv_path, as_attachment=True)

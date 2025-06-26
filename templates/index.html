@@ -252,6 +252,42 @@
             margin-top: 10px;
         }
         
+        .adjust-btn {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .adjust-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(23,162,184,0.3);
+        }
+        
+        .adjust-btn:active {
+            transform: translateY(0);
+        }
+        
+        .adjustment-controls {
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         @media (max-width: 768px) {
             .operations {
                 grid-template-columns: 1fr;
@@ -296,10 +332,39 @@
                         <div class="status-value" id="current-adjustment">{{ current_adjustment or "0" }}</div>
                     </div>
                 </div>
+                
                 {% if current_bin %}
-                <form method="POST" action="/close" style="margin-top: 15px;">
-                    <button type="submit" class="close-btn">Close Current Bin</button>
-                </form>
+                <!-- Adjustment Controls -->
+                <div class="adjustment-controls" style="margin-top: 20px; padding: 20px; background: white; border-radius: 8px; border: 1px solid #e9ecef;">
+                    <h4 style="margin-bottom: 15px; color: #2c3e50;">🔧 Adjustment Controls</h4>
+                    
+                    <!-- Quick Adjustment Buttons -->
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <button class="adjust-btn" onclick="adjustQuantity(-10)">-10</button>
+                        <button class="adjust-btn" onclick="adjustQuantity(-5)">-5</button>
+                        <button class="adjust-btn" onclick="adjustQuantity(-1)">-1</button>
+                        <button class="adjust-btn" onclick="adjustQuantity(1)">+1</button>
+                        <button class="adjust-btn" onclick="adjustQuantity(5)">+5</button>
+                    </div>
+                    
+                    <!-- Manual Adjustment Input -->
+                    <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: end;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="manual-adjustment">Manual Adjustment:</label>
+                            <input type="number" id="manual-adjustment" placeholder="Enter adjustment value" style="width: 100%;">
+                        </div>
+                        <button class="btn" onclick="setAdjustment()" style="width: auto; padding: 12px 20px;">Set</button>
+                        <button class="btn btn-success" onclick="applyAdjustment()" style="width: auto; padding: 12px 20px;">Apply</button>
+                    </div>
+                    
+                    <!-- Reset and Close -->
+                    <div style="display: grid; grid-template-columns: auto auto; gap: 10px; margin-top: 15px;">
+                        <button class="btn" onclick="resetAdjustment()" style="width: auto; padding: 8px 16px;">Reset Adjustment</button>
+                        <form method="POST" action="/close" style="display: inline;">
+                            <button type="submit" class="close-btn">Close Bin</button>
+                        </form>
+                    </div>
+                </div>
                 {% endif %}
             </div>
 
@@ -395,6 +460,107 @@
         setTimeout(() => {
             location.reload();
         }, 30000);
+
+        // Adjustment control functions
+        function adjustQuantity(amount) {
+            fetch('/adjust', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ adjustment: amount })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adjusting quantity');
+            });
+        }
+
+        function setAdjustment() {
+            const manualInput = document.getElementById('manual-adjustment');
+            const value = parseInt(manualInput.value);
+            
+            if (isNaN(value)) {
+                alert('Please enter a valid number');
+                return;
+            }
+            
+            fetch('/set-adjustment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ adjustment: value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus();
+                    manualInput.value = '';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error setting adjustment');
+            });
+        }
+
+        function applyAdjustment() {
+            fetch('/apply-adjustment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus();
+                    // Refresh the page to show updated inventory
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error applying adjustment');
+            });
+        }
+
+        function resetAdjustment() {
+            fetch('/reset-adjustment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus();
+                    document.getElementById('manual-adjustment').value = '';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error resetting adjustment');
+            });
+        }
     </script>
 </body>
 </html>
