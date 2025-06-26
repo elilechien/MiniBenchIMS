@@ -404,7 +404,6 @@
                             <th>Name</th>
                             <th>Quantity</th>
                             <th>Location</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -413,11 +412,13 @@
                             <td><input type="text" value="{{ row['Name'] }}" class="edit-name" style="width: 100%;"></td>
                             <td><input type="number" value="{{ row['Quantity'] }}" class="edit-quantity" style="width: 80px;"></td>
                             <td><input type="text" value="{{ row['Location'] }}" class="edit-location" style="width: 100px;"></td>
-                            <td><button class="btn btn-success" onclick="saveRow(this)">Save</button></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-success" onclick="saveAllChanges()">💾 Save All Changes</button>
+                </div>
             </div>
         </div>
     </div>
@@ -495,26 +496,26 @@
             }
         });
 
-        function saveRow(btn) {
-            var row = btn.closest('tr');
-            var name = row.querySelector('.edit-name').value;
-            var quantity = row.querySelector('.edit-quantity').value;
-            var location = row.querySelector('.edit-location').value;
-            var original_location = row.getAttribute('data-location');
-            fetch('/update-bin', {
+        function saveAllChanges() {
+            const rows = document.querySelectorAll('#inventory-table tbody tr');
+            const changes = [];
+
+            rows.forEach(row => {
+                const name = row.querySelector('.edit-name').value;
+                const quantity = row.querySelector('.edit-quantity').value;
+                const location = row.querySelector('.edit-location').value;
+                const original_location = row.getAttribute('data-location');
+                changes.push({ name, quantity, location, original_location });
+            });
+
+            fetch('/update-all-bins', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: name,
-                    quantity: quantity,
-                    location: location,
-                    original_location: original_location
-                })
+                body: JSON.stringify({ changes })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    row.setAttribute('data-location', location);
                     updateStatus();
                     setTimeout(() => { location.reload(); }, 500);
                 } else {
@@ -522,7 +523,7 @@
                 }
             })
             .catch(error => {
-                alert('Error updating bin: ' + error.message);
+                alert('Error updating bins: ' + error.message);
             });
         }
     </script>

@@ -392,6 +392,51 @@ def update_bin():
         save_bins(bins)
     return jsonify({'success': True})
 
+@app.route("/update-all-bins", methods=['POST'])
+def update_all_bins():
+    if not request.is_json:
+        return jsonify({'success': False, 'error': 'Invalid request format'})
+    
+    data = request.get_json()
+    changes = data.get('changes', [])
+    
+    if not changes:
+        return jsonify({'success': False, 'error': 'No changes provided'})
+    
+    try:
+        with csv_lock:
+            bins = load_bins()
+            
+            # Process all changes
+            for change in changes:
+                name = change.get('name', '').strip()
+                quantity = change.get('quantity', '').strip()
+                location = change.get('location', '').strip()
+                original_location = change.get('original_location', '').strip()
+                
+                try:
+                    quantity = int(quantity)
+                except ValueError:
+                    return jsonify({'success': False, 'error': f'Invalid quantity for {original_location}'})
+                
+                # Find the bin to update
+                b = find_bin(bins, original_location)
+                if not b:
+                    return jsonify({'success': False, 'error': f'Original bin {original_location} not found'})
+                
+                # Update the bin
+                b.name = name
+                b.quantity = quantity
+                b.location = location
+            
+            # Save all changes
+            save_bins(bins)
+            
+        return jsonify({'success': True, 'message': f'Updated {len(changes)} bins successfully'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Error updating bins: {str(e)}'})
+
 def start_flask():
     import logging
     log = logging.getLogger('werkzeug')
