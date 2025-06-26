@@ -182,9 +182,9 @@ def get_current_status():
 @app.route("/")
 def index():
     try:
-        df = pd.read_csv(csv_path)
-        table_html = df.to_html(index=False, classes="table")
-        return render_template("index.html", table=table_html, **get_current_status())
+        bins = load_bins()
+        table_data = [b.to_dict() for b in bins]
+        return render_template("index.html", table_data=table_data, **get_current_status())
     except Exception as e:
         return f"<p>Error loading CSV: {e}</p>"
 
@@ -348,6 +348,28 @@ def apply_adjustment():
 @app.route("/download")
 def download_csv():
     return send_file(csv_path, as_attachment=True)
+
+@app.route("/update-bin", methods=['POST'])
+def update_bin():
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    quantity = data.get('quantity', '').strip()
+    location = data.get('location', '').strip()
+    original_location = data.get('original_location', '').strip()
+    try:
+        quantity = int(quantity)
+    except Exception:
+        return jsonify({'success': False, 'error': 'Invalid quantity'})
+    with csv_lock:
+        bins = load_bins()
+        b = find_bin(bins, original_location)
+        if not b:
+            return jsonify({'success': False, 'error': 'Original bin not found'})
+        b.name = name
+        b.quantity = quantity
+        b.location = location
+        save_bins(bins)
+    return jsonify({'success': True})
 
 def start_flask():
     import logging

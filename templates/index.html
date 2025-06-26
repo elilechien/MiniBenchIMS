@@ -398,7 +398,26 @@
                     📋 Current Inventory
                     <a href="/download" download class="download-btn">⬇️ Download CSV</a>
                 </h3>
-                {{ table | safe }}
+                <table class="table" id="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Quantity</th>
+                            <th>Location</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_data %}
+                        <tr data-location="{{ row['Location'] }}">
+                            <td><input type="text" value="{{ row['Name'] }}" class="edit-name" style="width: 100%;"></td>
+                            <td><input type="number" value="{{ row['Quantity'] }}" class="edit-quantity" style="width: 80px;"></td>
+                            <td><input type="text" value="{{ row['Location'] }}" class="edit-location" style="width: 100px;"></td>
+                            <td><button class="btn btn-success" onclick="saveRow(this)">Save</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -475,6 +494,37 @@
                 });
             }
         });
+
+        function saveRow(btn) {
+            var row = btn.closest('tr');
+            var name = row.querySelector('.edit-name').value;
+            var quantity = row.querySelector('.edit-quantity').value;
+            var location = row.querySelector('.edit-location').value;
+            var original_location = row.getAttribute('data-location');
+            fetch('/update-bin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    quantity: quantity,
+                    location: location,
+                    original_location: original_location
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    row.setAttribute('data-location', location);
+                    updateStatus();
+                    setTimeout(() => { location.reload(); }, 500);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error updating bin: ' + error.message);
+            });
+        }
     </script>
 </body>
 </html>
