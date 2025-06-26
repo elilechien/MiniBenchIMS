@@ -63,16 +63,16 @@ def button_pressed(channel=None):
 button.when_pressed = button_pressed
 
 def rotary_cw():
+    global current_adjustment
     with state_lock:
         if current_bin is not None:
             current_adjustment += 1
-    print("Rotary encoder: Clockwise")
 
 def rotary_ccw():
+    global current_adjustment
     with state_lock:
         if current_bin is not None:
             current_adjustment -= 1
-    print("Rotary encoder: Counter-clockwise")
 
 encoder.when_rotated_clockwise = rotary_cw
 encoder.when_rotated_counter_clockwise = rotary_ccw
