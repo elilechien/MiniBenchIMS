@@ -541,12 +541,16 @@ def start_tkinter_gui():
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
-    # Open Bin input - will be positioned below "No bin currently open" message
-    open_label = tk.Label(root, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
-                         anchor="center", justify="center")
+    # Open Bin input - side by side layout
+    open_frame = tk.Frame(right_container, bg="#1e1e1e")
     
-    open_entry = tk.Entry(root, font=("Helvetica", 16), width=8, justify="center",
+    open_label = tk.Label(open_frame, text="Open Bin:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+                         anchor="center", justify="center")
+    open_label.pack(side="left", padx=(0, 10))
+    
+    open_entry = tk.Entry(open_frame, font=("Helvetica", 16), width=8, justify="center",
                          bg="white", fg="black", relief="solid", bd=2)
+    open_entry.pack(side="left")
     
     # Add keyboard event handlers
     def on_entry_focus_in(event):
@@ -610,8 +614,7 @@ def start_tkinter_gui():
             # Show adjustment container when bin is open
             adj_container.pack(expand=True, fill="both")
             # Hide open bin input when bin is open
-            open_label.pack_forget()
-            open_entry.pack_forget()
+            open_frame.pack_forget()
             # Show close button when bin is open
             close_button.pack(pady=20)
             bin_label.config(text=f"{local_bin}")
@@ -657,7 +660,7 @@ def start_tkinter_gui():
             # Hide close button when no bin is open
             close_button.pack_forget()
             # Show open bin input when no bin is open
-            open_label.pack(pady=(20, 5), anchor="center")
+            open_frame.pack(pady=(20, 5), anchor="center")
             open_entry.pack(pady=(0, 10), anchor="center")
             open_entry.focus_set()
         root.after(200, update_display)
