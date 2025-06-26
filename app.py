@@ -39,6 +39,7 @@ last_sw = GPIO.input(SW)
 
 def button_pressed():
     global current_adjustment, current_bin, current_name, current_quantity
+    print("Button pressed!")
     with state_lock:
         if current_bin is None:
             return
