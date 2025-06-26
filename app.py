@@ -5,6 +5,7 @@ from flask import Flask, render_template, send_file, request, jsonify
 import tkinter as tk
 from gpiozero import Button, RotaryEncoder
 import os
+import subprocess
 
 # === OS CONFIG ===
 os.environ["DISPLAY"] = ":0"
@@ -455,6 +456,37 @@ def start_tkinter_gui():
         root.destroy()
         os._exit(0)
 
+    def show_keyboard():
+        try:
+            # Try to launch matchbox-keyboard (common on Raspberry Pi)
+            subprocess.Popen(['matchbox-keyboard'], 
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL)
+        except FileNotFoundError:
+            try:
+                # Fallback to onboard (Ubuntu/Debian)
+                subprocess.Popen(['onboard'], 
+                               stdout=subprocess.DEVNULL, 
+                               stderr=subprocess.DEVNULL)
+            except FileNotFoundError:
+                # If no keyboard found, just focus the entry
+                pass
+
+    def hide_keyboard():
+        try:
+            # Kill matchbox-keyboard
+            subprocess.run(['pkill', 'matchbox-keyboard'], 
+                         stdout=subprocess.DEVNULL, 
+                         stderr=subprocess.DEVNULL)
+        except:
+            try:
+                # Kill onboard
+                subprocess.run(['pkill', 'onboard'], 
+                             stdout=subprocess.DEVNULL, 
+                             stderr=subprocess.DEVNULL)
+            except:
+                pass
+
     exit_button = tk.Button(root, text="X", font=("Helvetica", 16, "bold"),
                            fg="#FFFFFF", bg="#FF4444",
                            command=exit_app,
@@ -515,6 +547,16 @@ def start_tkinter_gui():
     
     open_entry = tk.Entry(right_container, font=("Helvetica", 16), width=8, justify="center",
                          bg="white", fg="black", relief="solid", bd=2)
+    
+    # Add keyboard event handlers
+    def on_entry_focus_in(event):
+        show_keyboard()
+    
+    def on_entry_focus_out(event):
+        hide_keyboard()
+    
+    open_entry.bind('<FocusIn>', on_entry_focus_in)
+    open_entry.bind('<FocusOut>', on_entry_focus_out)
     
     def open_bin_gui():
         bin_num = open_entry.get().strip()
