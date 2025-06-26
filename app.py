@@ -74,6 +74,7 @@ def update_inventory_loop():
 
 def user_input_loop():
     global current_bin, current_name, current_quantity, current_adjustment
+    time.sleep(10)
     while True:
         user_cmd = input("Enter command (Add, Rem, Update, Open): ").strip()
         df = pd.read_csv(csv_path)
