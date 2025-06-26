@@ -313,23 +313,18 @@ def apply_adjustment():
     data = request.get_json()
     adjustment = data.get('adjustment', 0)
     
-    print(f"DEBUG: Received adjustment request: {adjustment}")
-    
     with state_lock:
         if current_bin is None:
             return jsonify({'success': False, 'error': 'No bin currently open'})
         local_bin = current_bin
-        print(f"DEBUG: Current bin: {local_bin}")
     
     with csv_lock:
         df = pd.read_csv(csv_path)
         iBin = df[df["Location"] == local_bin].index[0]
         old_quantity = df.at[iBin, "Quantity"]
-        print(f"DEBUG: Old quantity: {old_quantity}")
         
         df.at[iBin, "Quantity"] += adjustment
         new_quantity = df.at[iBin, "Quantity"]
-        print(f"DEBUG: New quantity: {new_quantity}")
 
         if df.at[iBin, "Quantity"] <= 0:
             # Remove the bin from the csv
@@ -339,13 +334,11 @@ def apply_adjustment():
                 current_bin = None
                 current_name = None
                 current_quantity = None
-            print(f"DEBUG: Removed bin {local_bin}")
             return jsonify({'success': True, 'message': f'Removed {local_bin} - quantity was 0 or less'})
         else:
             df.to_csv(csv_path, index=False)
             with state_lock:
                 current_quantity = int(new_quantity)
-            print(f"DEBUG: Updated quantity to {new_quantity}")
             return jsonify({'success': True, 'message': f'Updated {local_bin} quantity to {new_quantity}'})
 
 @app.route("/download")
