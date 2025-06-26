@@ -202,8 +202,9 @@ def add_item():
                 with csv_lock:
                     bins = load_bins()
                     if find_bin(bins, bin_location):
+                        table_data = [b.to_dict() for b in bins]
                         return render_template("index.html", 
-                                             table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                             table_data=table_data,
                                              error="Bin already occupied.",
                                              **get_current_status())
                     new_bin = Bin(name, quantity, bin_location)
@@ -213,23 +214,30 @@ def add_item():
                     with state_lock:
                         global current_bin_obj
                         current_bin_obj = new_bin
+                    table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
-                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                         table_data=table_data,
                                          success="Inventory updated successfully.",
                                          **get_current_status())
             except ValueError:
+                bins = load_bins()
+                table_data = [b.to_dict() for b in bins]
                 return render_template("index.html", 
-                                     table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
+                                     table_data=table_data,
                                      error="Invalid quantity. Please enter a number.",
                                      **get_current_status())
         else:
+            bins = load_bins()
+            table_data = [b.to_dict() for b in bins]
             return render_template("index.html", 
-                                 table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
+                                 table_data=table_data,
                                  error="All fields are required.",
                                  **get_current_status())
     
+    bins = load_bins()
+    table_data = [b.to_dict() for b in bins]
     return render_template("index.html", 
-                         table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
+                         table_data=table_data,
                          **get_current_status())
 
 @app.route("/remove", methods=['GET', 'POST'])
@@ -244,22 +252,28 @@ def remove_item():
                 if b:
                     bins.remove(b)
                     save_bins(bins)
+                    table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
-                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                         table_data=table_data,
                                          success=f"Removed {bin_location}.",
                                          **get_current_status())
                 else:
+                    table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
-                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                         table_data=table_data,
                                          error=f"{bin_location} not found.",
                                          **get_current_status())
         else:
+            bins = load_bins()
+            table_data = [b.to_dict() for b in bins]
             return render_template("index.html", 
-                                 table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
+                                 table_data=table_data,
                                  error="Bin location is required.",
                                  **get_current_status())
+    bins = load_bins()
+    table_data = [b.to_dict() for b in bins]
     return render_template("index.html", 
-                         table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
+                         table_data=table_data,
                          **get_current_status())
 
 @app.route("/open", methods=['GET', 'POST'])
@@ -275,22 +289,28 @@ def open_bin():
                     with state_lock:
                         global current_bin_obj
                         current_bin_obj = b
+                    table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
-                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                         table_data=table_data,
                                          success=f"Opened {bin_location} - {b.name} (Qty: {b.quantity})",
                                          **get_current_status())
                 else:
+                    table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
-                                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                                         table_data=table_data,
                                          error=f"{bin_location} not found.",
                                          **get_current_status())
         else:
+            bins = load_bins()
+            table_data = [b.to_dict() for b in bins]
             return render_template("index.html", 
-                                 table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
+                                 table_data=table_data,
                                  error="Bin location is required.",
                                  **get_current_status())
+    bins = load_bins()
+    table_data = [b.to_dict() for b in bins]
     return render_template("index.html", 
-                         table=pd.DataFrame([b.to_dict() for b in load_bins()]).to_html(index=False, classes="table"),
+                         table_data=table_data,
                          **get_current_status())
 
 @app.route("/close", methods=['POST'])
@@ -299,8 +319,9 @@ def close_bin():
         global current_bin_obj
         current_bin_obj = None
     bins = load_bins()
+    table_data = [b.to_dict() for b in bins]
     return render_template("index.html", 
-                         table=pd.DataFrame([b.to_dict() for b in bins]).to_html(index=False, classes="table"),
+                         table_data=table_data,
                          success="Bin closed.",
                          **get_current_status())
 
