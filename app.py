@@ -788,8 +788,15 @@ def start_tkinter_gui():
         if local_bin:
             main_frame.pack(expand=True, fill="both")
             title.pack(pady=40)
+            
+            # Hide the no_bin_label if it exists
             if hasattr(root, 'no_bin_label'):
-                root.no_bin_label.pack_forget()
+                root.no_bin_label.grid_remove()
+            
+            # Show the left and right frames
+            left_frame.grid()
+            right_frame.grid()
+            
             # Show adjustment container when bin is open
             adj_container.pack(expand=True, fill="both")
             # Hide selection controls when bin is open
@@ -846,6 +853,11 @@ def start_tkinter_gui():
             name_label.pack_forget()
             qty_label.pack_forget()
             title.pack(pady=40)
+            
+            # Hide the left and right frames
+            left_frame.grid_remove()
+            right_frame.grid_remove()
+            
             if not hasattr(root, 'no_bin_label'):
                 root.no_bin_label = tk.Label(main_frame, text="No bin currently open", 
                                             font=("Helvetica", 48, "bold"),
