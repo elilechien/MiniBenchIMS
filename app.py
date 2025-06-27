@@ -629,8 +629,11 @@ def start_tkinter_gui():
     # Clear Bin button
     def clear_bin():
         global current_bin_obj
+        if current_bin_obj is None:
+            return  # No bin is open, nothing to clear
+        
         with state_lock:
-            local_bin = current_bin_obj.location if current_bin_obj else None
+            local_bin = current_bin_obj.location
         if local_bin:
             with csv_lock:
                 bins = load_bins()
@@ -728,7 +731,7 @@ def start_tkinter_gui():
     # Remove the duplicate selection functions - they're now global
 
     def update_display():
-        global selected_row_index, selected_column_index, selection_mode
+        global selected_row_index, selected_column_index, selection_mode, current_bin_obj
         
         # Update selection display based on global state
         row_display.config(text=valid_rows[selected_row_index])
