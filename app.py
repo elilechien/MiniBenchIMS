@@ -21,6 +21,13 @@ current_bin_obj = None
 state_lock = threading.Lock()
 csv_lock = threading.Lock()
 
+# === GLOBAL SELECTION STATE ===
+valid_rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+valid_columns = [1, 2, 3, 4, 5, 6, 7, 8]
+selected_row_index = 0
+selected_column_index = 0
+selection_mode = "row"  # "row" or "column"
+
 # --- Bin class definition ---
 class Bin:
     def __init__(self, name, quantity, location):
@@ -68,8 +75,7 @@ def button_pressed(channel=None):
     with state_lock:
         if current_bin_obj is None:
             # No bin open - use selection mode
-            if 'button_pressed_selection' in globals():
-                button_pressed_selection()
+            button_pressed_selection()
             return
         # Bin is open - use adjustment mode
         local_bin = current_bin_obj.location
@@ -98,8 +104,7 @@ def rotary_cw():
     with state_lock:
         if current_bin_obj is None:
             # No bin open - use selection mode
-            if 'rotary_cw_selection' in globals():
-                rotary_cw_selection()
+            rotary_cw_selection()
         else:
             # Bin is open - use adjustment mode
             if current_bin_obj is not None:
@@ -110,8 +115,7 @@ def rotary_ccw():
     with state_lock:
         if current_bin_obj is None:
             # No bin open - use selection mode
-            if 'rotary_ccw_selection' in globals():
-                rotary_ccw_selection()
+            rotary_ccw_selection()
         else:
             # Bin is open - use adjustment mode
             if current_bin_obj is not None:
@@ -124,6 +128,44 @@ encoder = RotaryEncoder(CLK, DT,wrap=False, max_steps=0)
 button.when_pressed = button_pressed
 encoder.when_rotated_clockwise = rotary_cw
 encoder.when_rotated_counter_clockwise = rotary_ccw
+
+# Global selection functions
+def rotary_cw_selection():
+    global selected_row_index, selected_column_index
+    if selection_mode == "row":
+        selected_row_index = (selected_row_index + 1) % len(valid_rows)
+    else:  # column
+        selected_column_index = (selected_column_index + 1) % len(valid_columns)
+
+def rotary_ccw_selection():
+    global selected_row_index, selected_column_index
+    if selection_mode == "row":
+        selected_row_index = (selected_row_index - 1) % len(valid_rows)
+    else:  # column
+        selected_column_index = (selected_column_index - 1) % len(valid_columns)
+
+def button_pressed_selection():
+    global selection_mode, selected_row_index, selected_column_index
+    if selection_mode == "row":
+        selection_mode = "column"
+    else:
+        # Open the selected bin
+        selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
+        with csv_lock:
+            bins = load_bins()
+            b = find_bin(bins, selected_bin)
+            if b:
+                with state_lock:
+                    global current_bin_obj
+                    current_bin_obj = b
+            else:
+                # Create empty bin if it doesn't exist
+                new_bin = Bin("", 0, selected_bin)
+                bins.append(new_bin)
+                bins.sort(key=lambda b: b.location)
+                save_bins(bins)
+                with state_lock:
+                    current_bin_obj = new_bin
 
 def user_input_loop():
     global current_bin_obj
@@ -586,13 +628,7 @@ def start_tkinter_gui():
     close_button.pack(pady=20)
 
     # Row and Column Selection
-    valid_rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-    valid_columns = [1, 2, 3, 4, 5, 6, 7, 8]
-    
-    # Selection state
-    selected_row_index = 0
-    selected_column_index = 0
-    selection_mode = "row"  # "row" or "column"
+    # Use global selection state instead of local variables
     
     # Create selection frame
     selection_frame = tk.Frame(right_container, bg="#1e1e1e")
@@ -647,7 +683,7 @@ def start_tkinter_gui():
                            width=15, height=2)
     open_button.pack(pady=10)
     
-    # Selection functions
+    # Selection functions - use global state
     def select_row():
         global selection_mode
         selection_mode = "row"
@@ -666,33 +702,25 @@ def start_tkinter_gui():
     row_display.bind('<Button-1>', lambda e: select_row())
     col_display.bind('<Button-1>', lambda e: select_column())
     
-    # Override rotary encoder functions for selection
-    def rotary_cw_selection():
-        global selected_row_index, selected_column_index
-        if selection_mode == "row":
-            selected_row_index = (selected_row_index + 1) % len(valid_rows)
-            row_display.config(text=valid_rows[selected_row_index])
-        else:  # column
-            selected_column_index = (selected_column_index + 1) % len(valid_columns)
-            col_display.config(text=str(valid_columns[selected_column_index]))
-    
-    def rotary_ccw_selection():
-        global selected_row_index, selected_column_index
-        if selection_mode == "row":
-            selected_row_index = (selected_row_index - 1) % len(valid_rows)
-            row_display.config(text=valid_rows[selected_row_index])
-        else:  # column
-            selected_column_index = (selected_column_index - 1) % len(valid_columns)
-            col_display.config(text=str(valid_columns[selected_column_index]))
-    
-    # Override button press for selection
-    def button_pressed_selection():
-        if selection_mode == "row":
-            select_column()  # Switch to column selection
-        else:
-            open_selected_bin()  # Open the selected bin
+    # Remove the duplicate selection functions - they're now global
 
     def update_display():
+        global selected_row_index, selected_column_index, selection_mode
+        
+        # Update selection display based on global state
+        row_display.config(text=valid_rows[selected_row_index])
+        col_display.config(text=str(valid_columns[selected_column_index]))
+        
+        # Update highlighting based on selection mode
+        if selection_mode == "row":
+            row_display.config(fg="#FFD700", bg="#333333")  # Highlight row
+            col_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight column
+            instruction_label.config(text="Row selected - use rotary encoder to change")
+        else:
+            col_display.config(fg="#FFD700", bg="#333333")  # Highlight column
+            row_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight row
+            instruction_label.config(text="Column selected - use rotary encoder to change")
+        
         with state_lock:
             local_bin = current_bin_obj.location if current_bin_obj else None
             local_name = current_bin_obj.name if current_bin_obj else None
