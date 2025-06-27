@@ -545,7 +545,7 @@ def start_tkinter_gui():
                            width=3, height=1)
     exit_button.place(relx=0.98, rely=0.02, anchor="ne")
 
-    title = tk.Label(root, text="MiniBench Inventory", font=("Helvetica", 36, "bold"),
+    title = tk.Label(root, text="MiniBench Inventory", font=("Helvetica", 48, "bold"),
                     fg="#FFD700", bg="#1e1e1e")
     title.pack(pady=40)
 
@@ -639,25 +639,25 @@ def start_tkinter_gui():
     
     # Instructions
     instruction_label = tk.Label(selection_frame, text="Row selected - use rotary encoder to change", 
-                                font=("Helvetica", 14), fg="#FFFFFF", bg="#1e1e1e",
+                                font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                                 anchor="center", justify="center")
     instruction_label.pack(pady=(0, 10))
     
     # Row selection
-    row_label = tk.Label(selection_frame, text="Row:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    row_label = tk.Label(selection_frame, text="Row:", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                         anchor="center", justify="center")
     row_label.pack(side="left", padx=(0, 10))
     
-    row_display = tk.Label(selection_frame, text=valid_rows[selected_row_index], font=("Helvetica", 24, "bold"), 
+    row_display = tk.Label(selection_frame, text=valid_rows[selected_row_index], font=("Helvetica", 32, "bold"), 
                           fg="#FFD700", bg="#333333", relief="solid", bd=2, width=3)  # Use current global value
     row_display.pack(side="left", padx=(0, 20))
     
     # Column selection
-    col_label = tk.Label(selection_frame, text="Column:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    col_label = tk.Label(selection_frame, text="Column:", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                         anchor="center", justify="center")
     col_label.pack(side="left", padx=(0, 10))
     
-    col_display = tk.Label(selection_frame, text=str(valid_columns[selected_column_index]), font=("Helvetica", 24, "bold"), 
+    col_display = tk.Label(selection_frame, text=str(valid_columns[selected_column_index]), font=("Helvetica", 32, "bold"), 
                           fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)  # Use current global value
     col_display.pack(side="left")
 
@@ -713,14 +713,14 @@ def start_tkinter_gui():
     # Button frame for selection buttons
     selection_button_frame = tk.Frame(main_frame, bg="#1e1e1e")
     
-    open_button = tk.Button(selection_button_frame, text="Open Selected Bin", font=("Helvetica", 14, "bold"),
+    open_button = tk.Button(selection_button_frame, text="Open Selected Bin", font=("Helvetica", 20, "bold"),
                            fg="#FFFFFF", bg="#28a745",
                            command=open_selected_bin,
                            relief="flat", bd=0,
                            width=15, height=2)
     open_button.pack(side="left", padx=(0, 10))
 
-    clear_selected_button = tk.Button(selection_button_frame, text="Clear Selected Bin", font=("Helvetica", 14, "bold"),
+    clear_selected_button = tk.Button(selection_button_frame, text="Clear Selected Bin", font=("Helvetica", 20, "bold"),
                                      fg="#FFFFFF", bg="#ff8c00",  # Orange color
                                      command=clear_selected_bin,
                                      relief="flat", bd=0,
