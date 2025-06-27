@@ -146,11 +146,15 @@ def rotary_ccw_selection():
 
 def button_pressed_selection():
     global selection_mode, selected_row_index, selected_column_index
+    print(f"Button pressed - Current mode: {selection_mode}, Row: {selected_row_index}, Col: {selected_column_index}")
+    
     if selection_mode == "row":
         selection_mode = "column"
+        print(f"Switched to column mode")
     else:
         # Open the selected bin when column is selected
         selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
+        print(f"Attempting to open bin: {selected_bin}")
         with csv_lock:
             bins = load_bins()
             b = find_bin(bins, selected_bin)
@@ -158,6 +162,7 @@ def button_pressed_selection():
                 with state_lock:
                     global current_bin_obj
                     current_bin_obj = b
+                    print(f"Opened existing bin: {selected_bin}")
             else:
                 # Create empty bin if it doesn't exist
                 new_bin = Bin("", 0, selected_bin)
@@ -166,6 +171,7 @@ def button_pressed_selection():
                 save_bins(bins)
                 with state_lock:
                     current_bin_obj = new_bin
+                    print(f"Created and opened new bin: {selected_bin}")
 
 def user_input_loop():
     global current_bin_obj
