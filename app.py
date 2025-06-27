@@ -161,23 +161,33 @@ def button_pressed_selection():
         # Open the selected bin when column is selected
         selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
         print(f"Attempting to open bin: {selected_bin}")
+        
+        print("Acquiring csv_lock...")
         with csv_lock:
+            print("Loading bins...")
             bins = load_bins()
+            print(f"Loaded {len(bins)} bins")
+            
             b = find_bin(bins, selected_bin)
             if b:
+                print(f"Found existing bin: {selected_bin}")
                 with state_lock:
                     global current_bin_obj
                     current_bin_obj = b
                     print(f"Opened existing bin: {selected_bin}")
             else:
+                print(f"Creating new bin: {selected_bin}")
                 # Create empty bin if it doesn't exist
                 new_bin = Bin("", 0, selected_bin)
                 bins.append(new_bin)
                 bins.sort(key=lambda b: b.location)
+                print("Saving bins...")
                 save_bins(bins)
+                print("Acquiring state_lock...")
                 with state_lock:
                     current_bin_obj = new_bin
                     print(f"Created and opened new bin: {selected_bin}")
+        print("Released csv_lock")
 
 def user_input_loop():
     global current_bin_obj
