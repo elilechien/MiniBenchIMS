@@ -77,7 +77,7 @@ def button_pressed(channel=None):
             return
         b.adjust_quantity(local_adjustment)
         if b.quantity <= 0:
-            bins.remove(b)
+            b.quantity = 0
             save_bins(bins)
             with state_lock:
                 current_bin_obj = None
@@ -133,11 +133,14 @@ def user_input_loop():
             Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
 
             with csv_lock:
-                df = pd.read_csv(csv_path)
-                iBin = df[df["Location"] == Bin_location].index[0]
-                df.drop(iBin, inplace=True)
-                df.to_csv(csv_path, index=False)
-                print(f"Removed {Bin_location}.")
+                bins = load_bins()
+                b = find_bin(bins, Bin_location)
+                if b:
+                    b.quantity = 0  # Set quantity to 0 instead of removing
+                    save_bins(bins)
+                    print(f"Set {Bin_location} quantity to 0.")
+                else:
+                    print(f"{Bin_location} not found.")
 
         elif user_cmd == "Open":
             Bin_location = input("Open which bin (e.g., A1)? ").strip().upper()
@@ -251,12 +254,12 @@ def remove_item():
                 bins = load_bins()
                 b = find_bin(bins, bin_location)
                 if b:
-                    bins.remove(b)
+                    b.quantity = 0  # Set quantity to 0 instead of removing
                     save_bins(bins)
                     table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
                                          table_data=table_data,
-                                         success=f"Removed {bin_location}.",
+                                         success=f"Set {bin_location} quantity to 0.",
                                          **get_current_status())
                 else:
                     table_data = [b.to_dict() for b in bins]
@@ -355,11 +358,11 @@ def apply_adjustment():
             return jsonify({'success': False, 'error': 'Bin not found'})
         b.adjust_quantity(adjustment)
         if b.quantity <= 0:
-            bins.remove(b)
+            b.quantity = 0
             save_bins(bins)
             with state_lock:
                 current_bin_obj = None
-            return jsonify({'success': True, 'message': f'Removed {local_bin} - quantity was 0 or less'})
+            return jsonify({'success': True, 'message': f'Set {local_bin} quantity to 0'})
         else:
             save_bins(bins)
             with state_lock:
