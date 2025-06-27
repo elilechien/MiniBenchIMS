@@ -538,37 +538,6 @@ def start_tkinter_gui():
         root.destroy()
         os._exit(0)
 
-    def show_keyboard():
-        try:
-            # Try to launch matchbox-keyboard (common on Raspberry Pi)
-            subprocess.Popen(['matchbox-keyboard'], 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
-        except FileNotFoundError:
-            try:
-                # Fallback to onboard (Ubuntu/Debian)
-                subprocess.Popen(['onboard'], 
-                               stdout=subprocess.DEVNULL, 
-                               stderr=subprocess.DEVNULL)
-            except FileNotFoundError:
-                # If no keyboard found, just focus the entry
-                pass
-
-    def hide_keyboard():
-        try:
-            # Kill matchbox-keyboard
-            subprocess.run(['pkill', 'matchbox-keyboard'], 
-                         stdout=subprocess.DEVNULL, 
-                         stderr=subprocess.DEVNULL)
-        except:
-            try:
-                # Kill onboard
-                subprocess.run(['pkill', 'onboard'], 
-                             stdout=subprocess.DEVNULL, 
-                             stderr=subprocess.DEVNULL)
-            except:
-                pass
-
     exit_button = tk.Button(root, text="X", font=("Helvetica", 16, "bold"),
                            fg="#FFFFFF", bg="#FF4444",
                            command=exit_app,
@@ -580,18 +549,14 @@ def start_tkinter_gui():
                     fg="#FFD700", bg="#1e1e1e")
     title.pack(pady=40)
 
-    # Create a centered container for all content
-    center_container = tk.Frame(root, bg="#1e1e1e")
-    center_container.pack(expand=True, fill="both", padx=100, pady=50)
-
-    main_frame = tk.Frame(center_container, bg="#1e1e1e")
-    main_frame.pack(expand=True, fill="both")
+    main_frame = tk.Frame(root, bg="#1e1e1e")
+    main_frame.pack(expand=True, fill="both", padx=20, pady=20)
     main_frame.columnconfigure(0, weight=1)
     main_frame.columnconfigure(1, weight=1)
     main_frame.rowconfigure(0, weight=1)
 
     left_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    left_frame.grid(row=0, column=0, sticky="nsew", padx=40)
+    left_frame.grid(row=0, column=0, sticky="nsew", padx=20)
     left_frame.rowconfigure(0, weight=1)
     left_frame.rowconfigure(1, weight=1)
     left_frame.rowconfigure(2, weight=1)
@@ -608,7 +573,7 @@ def start_tkinter_gui():
         label.pack(pady=20, anchor="center", fill="x", expand=True)
 
     right_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    right_frame.grid(row=0, column=1, sticky="nsew", padx=40)
+    right_frame.grid(row=0, column=1, sticky="nsew", padx=20)
     right_frame.rowconfigure(0, weight=1)
     right_frame.columnconfigure(0, weight=1)
 
@@ -619,15 +584,11 @@ def start_tkinter_gui():
     adj_container = tk.Frame(right_container, bg="#1e1e1e")
     adj_container.pack(expand=True, fill="both")
 
-    # Center the adjustment content
-    adj_center = tk.Frame(adj_container, bg="#1e1e1e")
-    adj_center.pack(expand=True, fill="both")
-
-    adj_label_text = tk.Label(adj_center, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
+    adj_label_text = tk.Label(adj_container, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                             anchor="center", justify="center")
     adj_label_text.pack(pady=(0, 5), anchor="center")
 
-    adj_value = tk.Label(adj_center, text="0", font=("Helvetica", 72, "bold"),
+    adj_value = tk.Label(adj_container, text="0", font=("Helvetica", 72, "bold"),
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
@@ -682,25 +643,21 @@ def start_tkinter_gui():
                                 anchor="center", justify="center")
     instruction_label.pack(pady=(0, 10))
     
-    # Selection controls container
-    selection_controls = tk.Frame(selection_frame, bg="#1e1e1e")
-    selection_controls.pack(anchor="center")
-    
     # Row selection
-    row_label = tk.Label(selection_controls, text="Row:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    row_label = tk.Label(selection_frame, text="Row:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                         anchor="center", justify="center")
     row_label.pack(side="left", padx=(0, 10))
     
-    row_display = tk.Label(selection_controls, text=valid_rows[0], font=("Helvetica", 24, "bold"), 
+    row_display = tk.Label(selection_frame, text=valid_rows[0], font=("Helvetica", 24, "bold"), 
                           fg="#FFD700", bg="#333333", relief="solid", bd=2, width=3)  # Start with row selected
     row_display.pack(side="left", padx=(0, 20))
     
     # Column selection
-    col_label = tk.Label(selection_controls, text="Column:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    col_label = tk.Label(selection_frame, text="Column:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                         anchor="center", justify="center")
     col_label.pack(side="left", padx=(0, 10))
     
-    col_display = tk.Label(selection_controls, text=str(valid_columns[0]), font=("Helvetica", 24, "bold"), 
+    col_display = tk.Label(selection_frame, text=str(valid_columns[0]), font=("Helvetica", 24, "bold"), 
                           fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)
     col_display.pack(side="left")
     
@@ -890,7 +847,7 @@ def start_tkinter_gui():
             qty_label.pack_forget()
             title.pack(pady=40)
             if not hasattr(root, 'no_bin_label'):
-                root.no_bin_label = tk.Label(center_container, text="No bin currently open", 
+                root.no_bin_label = tk.Label(main_frame, text="No bin currently open", 
                                             font=("Helvetica", 48, "bold"),
                                             fg="#FFD700", bg="#1e1e1e")
                 root.no_bin_label.pack(expand=True, fill="both")
