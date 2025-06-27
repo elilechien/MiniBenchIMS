@@ -117,7 +117,7 @@ def user_input_loop():
         if user_cmd == "Add":
             Name = input("Component Name: ").strip()
             Quantity = int(input("Component Quantity: ").strip())
-            Bin_location = "Bin-" + input("Bin Location: ").strip()
+            Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
 
             with csv_lock:
                 df = pd.read_csv(csv_path)
@@ -130,7 +130,7 @@ def user_input_loop():
                     print("Inventory updated.")
 
         elif user_cmd == "Rem":
-            Bin_location = "Bin-" + input("Bin Location: ").strip()
+            Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
 
             with csv_lock:
                 df = pd.read_csv(csv_path)
@@ -140,7 +140,7 @@ def user_input_loop():
                 print(f"Removed {Bin_location}.")
 
         elif user_cmd == "Open":
-            Bin_location = "Bin-" + input("Open which bin? ").strip()
+            Bin_location = input("Open which bin (e.g., A1)? ").strip().upper()
 
             with csv_lock:
                 bins = load_bins()
@@ -199,7 +199,7 @@ def add_item():
         if name and quantity and bin_location:
             try:
                 quantity = int(quantity)
-                bin_location = f"Bin-{bin_location}"
+                bin_location = bin_location.upper()  # Convert to uppercase for consistency
                 with csv_lock:
                     bins = load_bins()
                     if find_bin(bins, bin_location):
@@ -246,7 +246,7 @@ def remove_item():
     if request.method == 'POST':
         bin_location = request.form.get('bin_location', '').strip()
         if bin_location:
-            bin_location = f"Bin-{bin_location}"
+            bin_location = bin_location.upper()  # Convert to uppercase for consistency
             with csv_lock:
                 bins = load_bins()
                 b = find_bin(bins, bin_location)
@@ -282,7 +282,7 @@ def open_bin():
     if request.method == 'POST':
         bin_location = request.form.get('bin_location', '').strip()
         if bin_location:
-            bin_location = f"Bin-{bin_location}"
+            bin_location = bin_location.upper()  # Convert to uppercase for consistency
             with csv_lock:
                 bins = load_bins()
                 b = find_bin(bins, bin_location)
@@ -567,7 +567,8 @@ def start_tkinter_gui():
         if not bin_num:
             return
         
-        bin_location = f"Bin-{bin_num}"
+        # Use the input directly as the bin location (e.g., "A1", "B2")
+        bin_location = bin_num.upper()  # Convert to uppercase for consistency
         with csv_lock:
             bins = load_bins()
             b = find_bin(bins, bin_location)

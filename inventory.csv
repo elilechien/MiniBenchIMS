@@ -1,53 +1,65 @@
 Name,Quantity,Location
-Resistor 27Ω 0603,1132,Bin-01
-Resistor 330Ω 0805,171,Bin-02
-Resistor 56000Ω 0805,394,Bin-03
-Resistor 390Ω 0603,1209,Bin-04
-Resistor 1Ω 0603,128,Bin-05
-Capacitor 10pF 0603,92,Bin-06
-Resistor 470Ω 1206,629,Bin-07
-Resistor 4700000Ω 0603,1455,Bin-08
-Resistor 8Ω 1206,540,Bin-09
-Resistor 680Ω 1206,420,Bin-10
-Resistor 1Ω 0805,367,Bin-11
-Resistor 220000Ω 0603,805,Bin-12
-Resistor 39Ω 0603,0,Bin-13
-MCP3008 - 10-bit ADC,167,Bin-14
-Resistor 560Ω 0805,1213,Bin-15
-Resistor 12Ω 0805,375,Bin-16
-Capacitor 2.2pF 0603,446,Bin-17
-LED Green 0805,302,Bin-18
-L293D - Motor Driver,699,Bin-19
-Resistor 470000Ω 0805,68,Bin-21
-Resistor 18000Ω 0805,1049,Bin-22
-Resistor 150000Ω 0805,571,Bin-23
-FDC2214 - Capacitive Sensor,855,Bin-24
-Capacitor 1nF 0805,620,Bin-25
-Resistor 819999Ω 0603,55,Bin-26
-Resistor 8199999Ω 1206,1054,Bin-27
-Micro USB B,318,Bin-28
-Resistor 27000Ω 1206,656,Bin-29
-Resistor 390000Ω 0603,287,Bin-30
-Resistor 10Ω 0805,498,Bin-31
-DHT22 - Temperature & Humidity,1107,Bin-32
-Resistor 100000Ω 0805,550,Bin-33
-PCF8574 - I2C I/O Expander,355,Bin-34
-Resistor 6800Ω 0603,197,Bin-35
-Resistor 33000Ω 0805,1326,Bin-36
-Resistor 1800Ω 0603,355,Bin-37
-Resistor 270000Ω 1206,104,Bin-38
-Resistor 2700Ω 0805,598,Bin-39
-Capacitor 47pF 1206,1060,Bin-40
-DC Power Jack,2061,Bin-41
-Resistor 5600Ω 1206,533,Bin-42
-Screw Terminal 2-pin,18,Bin-43
-LM358 - Dual Op-Amp,25,Bin-44
-VL53L0X - Time of Flight,792,Bin-45
-ESP32-WROOM - WiFi/BLE SoC,179,Bin-46
-Resistor 2Ω 0603,400,Bin-47
-Resistor 270Ω 0805,633,Bin-48
-Resistor 22Ω 0805,1324,Bin-49
-R 50k,942,Bin-50
-Resistor 2700000Ω 0805,259,Bin-50
-Resistor 100000 Ohms 0603,732,Bin-50
-R 500 Ohms,226,Bin-51
+Resistor 10kΩ,150,A1
+Capacitor 100µF,75,A2
+LED Red,200,A3
+Arduino Nano,25,A4
+Breadboard,50,A5
+Jumper Wires,300,A6
+Potentiometer 10kΩ,80,A7
+Servo Motor,15,A8
+Transistor 2N2222,120,B1
+Diode 1N4007,180,B2
+IC 555 Timer,45,B3
+Relay Module,30,B4
+LCD Display 16x2,20,B5
+Push Button,100,B6
+Buzzer,60,B7
+Motor Driver L298N,12,B8
+ESP32 Dev Board,18,C1
+Raspberry Pi Pico,22,C2
+Temperature Sensor,35,C3
+Humidity Sensor,28,C4
+Accelerometer,15,C5
+Gyroscope,12,C6
+Bluetooth Module,25,C7
+WiFi Module,20,C8
+Stepper Motor,8,D1
+DC Motor,15,D2
+Fan 12V,10,D3
+Power Supply 5V,8,D4
+Battery Holder,25,D5
+Switch Toggle,40,D6
+Fuse Holder,30,D7
+Heat Sink,20,D8
+Oscilloscope Probe,5,E1
+Multimeter,3,E2
+Soldering Iron,2,E3
+Wire Stripper,8,E4
+Screwdriver Set,4,E5
+Pliers,6,E6
+Tweezers,12,E7
+Magnifying Glass,8,E8
+PCB Board,50,F1
+Copper Wire,200,F2
+Solder Wire,150,F3
+Flux Paste,25,F4
+Desoldering Pump,5,F5
+IC Socket,80,F6
+Header Pins,300,F7
+Crystal Oscillator,45,F8
+Voltage Regulator,35,G1
+Op-Amp LM358,60,G2
+Comparator LM393,40,G3
+Photoresistor,90,G4
+IR Sensor,25,G5
+Ultrasonic Sensor,18,G6
+Gas Sensor,12,G7
+Light Sensor,30,G8
+Microphone,20,H1
+Speaker,15,H2
+Vibration Motor,25,H3
+RGB LED,40,H4
+7-Segment Display,35,H5
+Matrix Keypad,8,H6
+RFID Reader,5,H7
+GPS Module,3,H8
