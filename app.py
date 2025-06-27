@@ -684,22 +684,30 @@ def start_tkinter_gui():
     
     # Open selected bin button
     def open_selected_bin():
-        global selected_row_index, selected_column_index, current_bin_obj
-        selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
-        with csv_lock:
-            bins = load_bins()
-            b = find_bin(bins, selected_bin)
-            if b:
-                with state_lock:
-                    current_bin_obj = b
-            else:
-                # Create empty bin if it doesn't exist
-                new_bin = Bin("", 0, selected_bin)
-                bins.append(new_bin)
-                bins.sort(key=lambda b: b.location)
-                save_bins(bins)
-                with state_lock:
-                    current_bin_obj = new_bin
+        try:
+            global current_bin_obj
+            # Read the current selection from the display labels
+            current_row = row_display.cget("text")
+            current_col = col_display.cget("text")
+            selected_bin = f"{current_row}{current_col}"
+            
+            with csv_lock:
+                bins = load_bins()
+                b = find_bin(bins, selected_bin)
+                if b:
+                    with state_lock:
+                        current_bin_obj = b
+                else:
+                    # Create empty bin if it doesn't exist
+                    new_bin = Bin("", 0, selected_bin)
+                    bins.append(new_bin)
+                    bins.sort(key=lambda b: b.location)
+                    save_bins(bins)
+                    with state_lock:
+                        current_bin_obj = new_bin
+        except Exception as e:
+            print(f"Error opening selected bin: {e}")
+            # Don't let the error break the application
     
     open_button = tk.Button(right_container, text="Open Selected Bin", font=("Helvetica", 14, "bold"),
                            fg="#FFFFFF", bg="#28a745",
