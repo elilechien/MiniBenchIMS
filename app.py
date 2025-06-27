@@ -334,6 +334,13 @@ def clear_item():
                     b.name = ""  # Clear name
                     b.quantity = 0  # Set quantity to 0
                     save_bins(bins)
+                    
+                    # Close the bin if it's currently open in Tkinter GUI
+                    with state_lock:
+                        global current_bin_obj
+                        if current_bin_obj and current_bin_obj.location == bin_location:
+                            current_bin_obj = None
+                    
                     table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
                                          table_data=table_data,
@@ -956,7 +963,7 @@ def start_tkinter_gui():
             
             # Handle quantity display
             if local_quantity == 0:
-                qty_label.config(text="Qty: Empty")
+                qty_label.config(text="Qty: 0")
             else:
                 qty_label.config(text=f"Qty: {local_quantity}")
             
