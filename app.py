@@ -859,8 +859,8 @@ def start_tkinter_gui():
             title.pack(pady=40)
             
             # Hide the left and right frames
-            left_frame.grid_remove()
-            right_frame.grid_remove()
+            left_frame.pack_forget()
+            right_frame.pack_forget()
             
             # Show selection controls when no bin is open
             selection_frame.pack(pady=20)
