@@ -764,8 +764,8 @@ def start_tkinter_gui():
             # Hide selection controls when bin is open
             selection_frame.pack_forget()
             open_button.pack_forget()
-            # Show close button when bin is open
-            close_button.pack(pady=20)
+            # Show button frame when bin is open
+            button_frame.pack(pady=20)
             # Show left frame labels when bin is open
             bin_label.pack(pady=20, anchor="center", fill="x", expand=True)
             name_label.pack(pady=20, anchor="center", fill="x", expand=True)
@@ -812,8 +812,8 @@ def start_tkinter_gui():
                 root.no_bin_label.pack(expand=True, fill="both")
             # Hide adjustment container when no bin is open
             adj_container.pack_forget()
-            # Hide close button when no bin is open
-            close_button.pack_forget()
+            # Hide button frame when no bin is open
+            button_frame.pack_forget()
             # Show selection controls when no bin is open
             selection_frame.pack(pady=20, anchor="center")
             open_button.pack(pady=10, anchor="center")
