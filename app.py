@@ -638,12 +638,6 @@ def start_tkinter_gui():
     # Selection controls - moved outside left/right frame structure
     selection_frame = tk.Frame(main_frame, bg="#1e1e1e")
     
-    # Instructions
-    instruction_label = tk.Label(selection_frame, text="Row selected - use rotary encoder to change", 
-                                font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
-                                anchor="center", justify="center")
-    instruction_label.pack(pady=(0, 10))
-    
     # Row selection
     row_label = tk.Label(selection_frame, text="Row:", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                         anchor="center", justify="center")
@@ -855,14 +849,12 @@ def start_tkinter_gui():
         selection_mode = "row"
         row_display.config(fg="#FFD700", bg="#333333")  # Highlight row
         col_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight column
-        instruction_label.config(text="Row selected - use rotary encoder to change")
     
     def select_column():
         global selection_mode
         selection_mode = "column"
         col_display.config(fg="#FFD700", bg="#333333")  # Highlight column
         row_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight row
-        instruction_label.config(text="Column selected - use rotary encoder to change")
     
     # Bind click events to selection boxes
     row_display.bind('<Button-1>', lambda e: select_row())
@@ -898,11 +890,9 @@ def start_tkinter_gui():
         if selection_mode == "row":
             row_display.config(fg="#FFD700", bg="#333333")  # Highlight row
             col_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight column
-            instruction_label.config(text="Row selected - use rotary encoder to change")
         else:
             col_display.config(fg="#FFD700", bg="#333333")  # Highlight column
             row_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight row
-            instruction_label.config(text="Column selected - use rotary encoder to change")
         
         with state_lock:
             local_bin = current_bin_obj.location if current_bin_obj else None
