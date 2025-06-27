@@ -890,7 +890,7 @@ def start_tkinter_gui():
             qty_label.pack_forget()
             title.pack(pady=40)
             if not hasattr(root, 'no_bin_label'):
-                root.no_bin_label = tk.Label(root, text="No bin currently open", 
+                root.no_bin_label = tk.Label(center_container, text="No bin currently open", 
                                             font=("Helvetica", 48, "bold"),
                                             fg="#FFD700", bg="#1e1e1e")
                 root.no_bin_label.pack(expand=True, fill="both")
