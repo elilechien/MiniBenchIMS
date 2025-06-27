@@ -64,10 +64,8 @@ def load_bins():
 
 def save_bins(bins):
     try:
-        print(f"Saving {len(bins)} bins to CSV...")
         df = pd.DataFrame([b.to_dict() for b in bins])
         df.to_csv(csv_path, index=False)
-        print(f"Successfully saved to {csv_path}")
     except Exception as e:
         print(f"Error saving bins: {e}")
         # Don't let the error break the application
@@ -156,40 +154,27 @@ def rotary_ccw_selection():
 
 def button_pressed_selection():
     global selection_mode, selected_row_index, selected_column_index
-    print(f"Button pressed - Current mode: {selection_mode}, Row: {selected_row_index}, Col: {selected_column_index}")
     
     if selection_mode == "row":
         selection_mode = "column"
-        print(f"Switched to column mode")
     else:
         # Open the selected bin when column is selected
         selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
-        print(f"Attempting to open bin: {selected_bin}")
         
-        print("Acquiring csv_lock...")
         with csv_lock:
-            print("Loading bins...")
             bins = load_bins()
-            print(f"Loaded {len(bins)} bins")
-            
             b = find_bin(bins, selected_bin)
             if b:
-                print(f"Found existing bin: {selected_bin}")
                 # Send message to GUI to open the bin
                 gui_event_queue.put(("OPEN_BIN", selected_bin))
-                print(f"*** ROTARY ENCODER: Sent OPEN_BIN message for {selected_bin} ***")
             else:
-                print(f"Creating new bin: {selected_bin}")
                 # Create empty bin if it doesn't exist
                 new_bin = Bin("", 0, selected_bin)
                 bins.append(new_bin)
                 bins.sort(key=lambda b: b.location)
-                print("Saving bins...")
                 save_bins(bins)
                 # Send message to GUI to open the new bin
                 gui_event_queue.put(("OPEN_BIN", selected_bin))
-                print(f"*** ROTARY ENCODER: Sent OPEN_BIN message for {selected_bin} ***")
-        print("Released csv_lock")
 
 def user_input_loop():
     global current_bin_obj
@@ -801,16 +786,12 @@ def start_tkinter_gui():
             while not gui_event_queue.empty():
                 message_type, data = gui_event_queue.get_nowait()
                 if message_type == "OPEN_BIN":
-                    print(f"*** GUI: Received OPEN_BIN message for {data} ***")
                     with csv_lock:
                         bins = load_bins()
                         b = find_bin(bins, data)
                         if b:
                             with state_lock:
                                 current_bin_obj = b
-                                print(f"*** GUI: Opened existing bin {data} ***")
-                        else:
-                            print(f"*** GUI: Bin {data} not found in CSV ***")
         except queue.Empty:
             pass  # No messages in queue
         
@@ -834,27 +815,6 @@ def start_tkinter_gui():
             local_quantity = current_bin_obj.quantity if current_bin_obj else None
             local_adjustment = current_bin_obj.adjustment if current_bin_obj else None
         
-        # State change detection
-        if not hasattr(update_display, 'last_bin_state'):
-            update_display.last_bin_state = None
-        
-        if local_bin != update_display.last_bin_state:
-            print(f"*** GUI STATE CHANGE: {update_display.last_bin_state} -> {local_bin} ***")
-            update_display.last_bin_state = local_bin
-        
-        # Debug output - only print every few seconds to avoid spam
-        import time
-        if not hasattr(update_display, 'last_debug_time'):
-            update_display.last_debug_time = 0
-        
-        current_time = time.time()
-        if current_time - update_display.last_debug_time > 2:  # Print every 2 seconds
-            if local_bin:
-                print(f"GUI update_display: Bin is open - {local_bin}, name: {local_name}, qty: {local_quantity}")
-            else:
-                print(f"GUI update_display: No bin open")
-            update_display.last_debug_time = current_time
-        
         if local_bin:
             main_frame.pack(expand=True, fill="both")
             title.pack(pady=40)
@@ -875,7 +835,13 @@ def start_tkinter_gui():
             available_width = name_label.winfo_width()
             if available_width <= 1:
                 available_width = 400
-            part_text = f"{local_name}"
+            
+            # Handle empty bin name
+            if not local_name or local_name.strip() == "":
+                part_text = "Empty"
+            else:
+                part_text = f"{local_name}"
+            
             font_sizes = [28, 24, 20, 16, 14, 12, 10]
             fitted_text = part_text
             for font_size in font_sizes:
@@ -894,7 +860,13 @@ def start_tkinter_gui():
                     truncated_name = local_name[:max_chars - 7] + "..."
                     fitted_text = f"{truncated_name}"
                 name_label.config(text=fitted_text, font=("Helvetica", 28))
-            qty_label.config(text=f"Qty: {local_quantity}")
+            
+            # Handle quantity display
+            if local_quantity == 0:
+                qty_label.config(text="Qty: Empty")
+            else:
+                qty_label.config(text=f"Qty: {local_quantity}")
+            
             adj_label_text.config(text="Adjustment")
             sign = "+" if local_adjustment > 0 else ""
             adj_value.config(text=f"{sign}{local_adjustment}")
