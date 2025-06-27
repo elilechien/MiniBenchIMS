@@ -59,8 +59,14 @@ def load_bins():
         return []
 
 def save_bins(bins):
-    df = pd.DataFrame([b.to_dict() for b in bins])
-    df.to_csv(csv_path, index=False)
+    try:
+        print(f"Saving {len(bins)} bins to CSV...")
+        df = pd.DataFrame([b.to_dict() for b in bins])
+        df.to_csv(csv_path, index=False)
+        print(f"Successfully saved to {csv_path}")
+    except Exception as e:
+        print(f"Error saving bins: {e}")
+        # Don't let the error break the application
 
 # --- Helper to find a bin by location ---
 def find_bin(bins, location):
@@ -797,6 +803,12 @@ def start_tkinter_gui():
             local_name = current_bin_obj.name if current_bin_obj else None
             local_quantity = current_bin_obj.quantity if current_bin_obj else None
             local_adjustment = current_bin_obj.adjustment if current_bin_obj else None
+        
+        # Debug output
+        if local_bin:
+            print(f"update_display: Bin is open - {local_bin}, name: {local_name}, qty: {local_quantity}")
+        else:
+            print(f"update_display: No bin open")
         
         if local_bin:
             main_frame.pack(expand=True, fill="both")
