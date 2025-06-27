@@ -67,7 +67,11 @@ def button_pressed(channel=None):
     global current_bin_obj
     with state_lock:
         if current_bin_obj is None:
+            # No bin open - use selection mode
+            if 'button_pressed_selection' in globals():
+                button_pressed_selection()
             return
+        # Bin is open - use adjustment mode
         local_bin = current_bin_obj.location
         local_adjustment = current_bin_obj.adjustment
     with csv_lock:
@@ -90,14 +94,28 @@ def button_pressed(channel=None):
                 current_bin_obj.adjustment = 0
 
 def rotary_cw():
+    global current_bin_obj
     with state_lock:
-        if current_bin_obj is not None:
-            current_bin_obj.adjustment += 1
+        if current_bin_obj is None:
+            # No bin open - use selection mode
+            if 'rotary_cw_selection' in globals():
+                rotary_cw_selection()
+        else:
+            # Bin is open - use adjustment mode
+            if current_bin_obj is not None:
+                current_bin_obj.adjustment += 1
 
 def rotary_ccw():
+    global current_bin_obj
     with state_lock:
-        if current_bin_obj is not None:
-            current_bin_obj.adjustment -= 1
+        if current_bin_obj is None:
+            # No bin open - use selection mode
+            if 'rotary_ccw_selection' in globals():
+                rotary_ccw_selection()
+        else:
+            # Bin is open - use adjustment mode
+            if current_bin_obj is not None:
+                current_bin_obj.adjustment -= 1
 
 # define RE GPIO pins and event detects
 SW,DT,CLK = 17, 27, 22
@@ -680,6 +698,9 @@ def start_tkinter_gui():
                 root.no_bin_label.pack_forget()
             # Show adjustment container when bin is open
             adj_container.pack(expand=True, fill="both")
+            # Hide selection controls when bin is open
+            selection_frame.pack_forget()
+            open_button.pack_forget()
             # Show close button when bin is open
             close_button.pack(pady=20)
             # Show left frame labels when bin is open
@@ -730,6 +751,9 @@ def start_tkinter_gui():
             adj_container.pack_forget()
             # Hide close button when no bin is open
             close_button.pack_forget()
+            # Show selection controls when no bin is open
+            selection_frame.pack(pady=20, anchor="center")
+            open_button.pack(pady=10, anchor="center")
         root.after(200, update_display)
 
     update_display()
