@@ -567,6 +567,105 @@ def start_tkinter_gui():
                             width=12, height=2)
     close_button.pack(pady=20)
 
+    # Row and Column Selection
+    valid_rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    valid_columns = [1, 2, 3, 4, 5, 6, 7, 8]
+    
+    # Selection state
+    selected_row_index = 0
+    selected_column_index = 0
+    selection_mode = "row"  # "row" or "column"
+    
+    # Create selection frame
+    selection_frame = tk.Frame(right_container, bg="#1e1e1e")
+    
+    # Row selection
+    row_label = tk.Label(selection_frame, text="Row:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+                        anchor="center", justify="center")
+    row_label.pack(side="left", padx=(0, 10))
+    
+    row_display = tk.Label(selection_frame, text=valid_rows[0], font=("Helvetica", 24, "bold"), 
+                          fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)
+    row_display.pack(side="left", padx=(0, 20))
+    
+    # Column selection
+    col_label = tk.Label(selection_frame, text="Column:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+                        anchor="center", justify="center")
+    col_label.pack(side="left", padx=(0, 10))
+    
+    col_display = tk.Label(selection_frame, text=str(valid_columns[0]), font=("Helvetica", 24, "bold"), 
+                          fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)
+    col_display.pack(side="left")
+    
+    # Open selected bin button
+    def open_selected_bin():
+        selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
+        with csv_lock:
+            bins = load_bins()
+            b = find_bin(bins, selected_bin)
+            if b:
+                with state_lock:
+                    global current_bin_obj
+                    current_bin_obj = b
+            else:
+                # Create empty bin if it doesn't exist
+                new_bin = Bin("", 0, selected_bin)
+                bins.append(new_bin)
+                bins.sort(key=lambda b: b.location)
+                save_bins(bins)
+                with state_lock:
+                    current_bin_obj = new_bin
+    
+    open_button = tk.Button(right_container, text="Open Selected Bin", font=("Helvetica", 14, "bold"),
+                           fg="#FFFFFF", bg="#28a745",
+                           command=open_selected_bin,
+                           relief="flat", bd=0,
+                           width=15, height=2)
+    open_button.pack(pady=10)
+    
+    # Selection functions
+    def select_row():
+        global selection_mode
+        selection_mode = "row"
+        row_display.config(fg="#FFD700", bg="#333333")  # Highlight row
+        col_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight column
+    
+    def select_column():
+        global selection_mode
+        selection_mode = "column"
+        col_display.config(fg="#FFD700", bg="#333333")  # Highlight column
+        row_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight row
+    
+    # Bind click events to selection boxes
+    row_display.bind('<Button-1>', lambda e: select_row())
+    col_display.bind('<Button-1>', lambda e: select_column())
+    
+    # Override rotary encoder functions for selection
+    def rotary_cw_selection():
+        global selected_row_index, selected_column_index
+        if selection_mode == "row":
+            selected_row_index = (selected_row_index + 1) % len(valid_rows)
+            row_display.config(text=valid_rows[selected_row_index])
+        else:  # column
+            selected_column_index = (selected_column_index + 1) % len(valid_columns)
+            col_display.config(text=str(valid_columns[selected_column_index]))
+    
+    def rotary_ccw_selection():
+        global selected_row_index, selected_column_index
+        if selection_mode == "row":
+            selected_row_index = (selected_row_index - 1) % len(valid_rows)
+            row_display.config(text=valid_rows[selected_row_index])
+        else:  # column
+            selected_column_index = (selected_column_index - 1) % len(valid_columns)
+            col_display.config(text=str(valid_columns[selected_column_index]))
+    
+    # Override button press for selection
+    def button_pressed_selection():
+        if selection_mode == "row":
+            select_column()  # Switch to column selection
+        else:
+            open_selected_bin()  # Open the selected bin
+
     def update_display():
         with state_lock:
             local_bin = current_bin_obj.location if current_bin_obj else None
