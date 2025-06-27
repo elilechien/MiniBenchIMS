@@ -628,6 +628,7 @@ def start_tkinter_gui():
 
     # Clear Bin button
     def clear_bin():
+        global current_bin_obj
         with state_lock:
             local_bin = current_bin_obj.location if current_bin_obj else None
         if local_bin:
@@ -639,7 +640,6 @@ def start_tkinter_gui():
                     b.quantity = 0  # Set quantity to 0
                     save_bins(bins)
                     with state_lock:
-                        global current_bin_obj
                         current_bin_obj = None
 
     clear_button = tk.Button(button_frame, text="Clear Bin", font=("Helvetica", 16, "bold"),
