@@ -711,7 +711,7 @@ def start_tkinter_gui():
             # Don't let the error break the application
 
     # Button frame for selection buttons
-    selection_button_frame = tk.Frame(right_container, bg="#1e1e1e")
+    selection_button_frame = tk.Frame(main_frame, bg="#1e1e1e")
     
     open_button = tk.Button(selection_button_frame, text="Open Selected Bin", font=("Helvetica", 14, "bold"),
                            fg="#FFFFFF", bg="#28a745",
