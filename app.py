@@ -618,6 +618,10 @@ def start_tkinter_gui():
             open_frame.pack_forget()
             # Show close button when bin is open
             close_button.pack(pady=20)
+            # Show left frame labels when bin is open
+            bin_label.pack(pady=20, anchor="center", fill="x", expand=True)
+            name_label.pack(pady=20, anchor="center", fill="x", expand=True)
+            qty_label.pack(pady=20, anchor="center", fill="x", expand=True)
             bin_label.config(text=f"{local_bin}")
             available_width = name_label.winfo_width()
             if available_width <= 1:
@@ -646,8 +650,10 @@ def start_tkinter_gui():
             sign = "+" if local_adjustment > 0 else ""
             adj_value.config(text=f"{sign}{local_adjustment}")
         else:
-            for child in left_frame.winfo_children():
-                child.pack_forget()
+            # Hide left frame labels when no bin is open
+            bin_label.pack_forget()
+            name_label.pack_forget()
+            qty_label.pack_forget()
             title.pack(pady=40)
             if not hasattr(root, 'no_bin_label'):
                 root.no_bin_label = tk.Label(root, text="No bin currently open", 
