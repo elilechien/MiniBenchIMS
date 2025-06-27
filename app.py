@@ -684,14 +684,13 @@ def start_tkinter_gui():
     
     # Open selected bin button
     def open_selected_bin():
-        global selected_row_index, selected_column_index
+        global selected_row_index, selected_column_index, current_bin_obj
         selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
         with csv_lock:
             bins = load_bins()
             b = find_bin(bins, selected_bin)
             if b:
                 with state_lock:
-                    global current_bin_obj
                     current_bin_obj = b
             else:
                 # Create empty bin if it doesn't exist
