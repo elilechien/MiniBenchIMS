@@ -174,7 +174,7 @@ def button_pressed_selection():
                 with state_lock:
                     global current_bin_obj
                     current_bin_obj = b
-                    print(f"Opened existing bin: {selected_bin}")
+                    print(f"*** ROTARY ENCODER: Set current_bin_obj to {selected_bin} ***")
             else:
                 print(f"Creating new bin: {selected_bin}")
                 # Create empty bin if it doesn't exist
@@ -186,7 +186,7 @@ def button_pressed_selection():
                 print("Acquiring state_lock...")
                 with state_lock:
                     current_bin_obj = new_bin
-                    print(f"Created and opened new bin: {selected_bin}")
+                    print(f"*** ROTARY ENCODER: Set current_bin_obj to {selected_bin} ***")
         print("Released csv_lock")
 
 def user_input_loop():
@@ -814,11 +814,26 @@ def start_tkinter_gui():
             local_quantity = current_bin_obj.quantity if current_bin_obj else None
             local_adjustment = current_bin_obj.adjustment if current_bin_obj else None
         
-        # Debug output
-        if local_bin:
-            print(f"update_display: Bin is open - {local_bin}, name: {local_name}, qty: {local_quantity}")
-        else:
-            print(f"update_display: No bin open")
+        # State change detection
+        if not hasattr(update_display, 'last_bin_state'):
+            update_display.last_bin_state = None
+        
+        if local_bin != update_display.last_bin_state:
+            print(f"*** GUI STATE CHANGE: {update_display.last_bin_state} -> {local_bin} ***")
+            update_display.last_bin_state = local_bin
+        
+        # Debug output - only print every few seconds to avoid spam
+        import time
+        if not hasattr(update_display, 'last_debug_time'):
+            update_display.last_debug_time = 0
+        
+        current_time = time.time()
+        if current_time - update_display.last_debug_time > 2:  # Print every 2 seconds
+            if local_bin:
+                print(f"GUI update_display: Bin is open - {local_bin}, name: {local_name}, qty: {local_quantity}")
+            else:
+                print(f"GUI update_display: No bin open")
+            update_display.last_debug_time = current_time
         
         if local_bin:
             main_frame.pack(expand=True, fill="both")
