@@ -311,12 +311,12 @@ def add_item():
                          table_data=table_data,
                          **get_current_status())
 
-@app.route("/remove", methods=['GET', 'POST'])
-def remove_item():
+@app.route("/clear", methods=['GET', 'POST'])
+def clear_item():
     if request.method == 'POST':
-        bin_location = request.form.get('bin_location', '').strip()
+        bin_location = request.form.get('bin_location', '').strip().upper()
+        
         if bin_location:
-            bin_location = bin_location.upper()  # Convert to uppercase for consistency
             with csv_lock:
                 bins = load_bins()
                 b = find_bin(bins, bin_location)
@@ -342,11 +342,11 @@ def remove_item():
                                  table_data=table_data,
                                  error="Bin location is required.",
                                  **get_current_status())
+    
+    # GET request - show the form
     bins = load_bins()
     table_data = [b.to_dict() for b in bins]
-    return render_template("index.html", 
-                         table_data=table_data,
-                         **get_current_status())
+    return render_template("index.html", table_data=table_data, **get_current_status())
 
 @app.route("/open", methods=['GET', 'POST'])
 def open_bin():
@@ -659,6 +659,7 @@ def start_tkinter_gui():
     
     # Open selected bin button
     def open_selected_bin():
+        global selected_row_index, selected_column_index
         selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
         with csv_lock:
             bins = load_bins()
