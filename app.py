@@ -6,6 +6,7 @@ import tkinter as tk
 from gpiozero import Button, RotaryEncoder
 import os
 import subprocess
+import queue
 
 # === OS CONFIG ===
 os.environ["DISPLAY"] = ":0"
@@ -27,6 +28,9 @@ valid_columns = [1, 2, 3, 4, 5, 6, 7, 8]
 selected_row_index = 0
 selected_column_index = 0
 selection_mode = "row"  # "row" or "column"
+
+# === THREAD COMMUNICATION ===
+gui_event_queue = queue.Queue()
 
 # --- Bin class definition ---
 class Bin:
@@ -171,10 +175,9 @@ def button_pressed_selection():
             b = find_bin(bins, selected_bin)
             if b:
                 print(f"Found existing bin: {selected_bin}")
-                with state_lock:
-                    global current_bin_obj
-                    current_bin_obj = b
-                    print(f"*** ROTARY ENCODER: Set current_bin_obj to {selected_bin} ***")
+                # Send message to GUI to open the bin
+                gui_event_queue.put(("OPEN_BIN", selected_bin))
+                print(f"*** ROTARY ENCODER: Sent OPEN_BIN message for {selected_bin} ***")
             else:
                 print(f"Creating new bin: {selected_bin}")
                 # Create empty bin if it doesn't exist
@@ -183,10 +186,9 @@ def button_pressed_selection():
                 bins.sort(key=lambda b: b.location)
                 print("Saving bins...")
                 save_bins(bins)
-                print("Acquiring state_lock...")
-                with state_lock:
-                    current_bin_obj = new_bin
-                    print(f"*** ROTARY ENCODER: Set current_bin_obj to {selected_bin} ***")
+                # Send message to GUI to open the new bin
+                gui_event_queue.put(("OPEN_BIN", selected_bin))
+                print(f"*** ROTARY ENCODER: Sent OPEN_BIN message for {selected_bin} ***")
         print("Released csv_lock")
 
 def user_input_loop():
@@ -793,6 +795,24 @@ def start_tkinter_gui():
 
     def update_display():
         global selected_row_index, selected_column_index, selection_mode, current_bin_obj
+        
+        # Check for messages from rotary encoder thread
+        try:
+            while not gui_event_queue.empty():
+                message_type, data = gui_event_queue.get_nowait()
+                if message_type == "OPEN_BIN":
+                    print(f"*** GUI: Received OPEN_BIN message for {data} ***")
+                    with csv_lock:
+                        bins = load_bins()
+                        b = find_bin(bins, data)
+                        if b:
+                            with state_lock:
+                                current_bin_obj = b
+                                print(f"*** GUI: Opened existing bin {data} ***")
+                        else:
+                            print(f"*** GUI: Bin {data} not found in CSV ***")
+        except queue.Empty:
+            pass  # No messages in queue
         
         # Update selection display based on global state
         row_display.config(text=valid_rows[selected_row_index])
