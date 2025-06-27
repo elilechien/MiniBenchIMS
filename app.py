@@ -138,9 +138,14 @@ def user_input_loop():
                 bins = load_bins()
                 b = find_bin(bins, Bin_location)
                 if b:
-                    b.quantity = 0  # Set quantity to 0 instead of removing
+                    b.name = ""  # Clear name
+                    b.quantity = 0  # Set quantity to 0
                     save_bins(bins)
-                    print(f"Set {Bin_location} quantity to 0.")
+                    table_data = [b.to_dict() for b in bins]
+                    return render_template("index.html", 
+                                         table_data=table_data,
+                                         success=f"Cleared {Bin_location}.",
+                                         **get_current_status())
                 else:
                     print(f"{Bin_location} not found.")
 
@@ -256,12 +261,13 @@ def remove_item():
                 bins = load_bins()
                 b = find_bin(bins, bin_location)
                 if b:
-                    b.quantity = 0  # Set quantity to 0 instead of removing
+                    b.name = ""  # Clear name
+                    b.quantity = 0  # Set quantity to 0
                     save_bins(bins)
                     table_data = [b.to_dict() for b in bins]
                     return render_template("index.html", 
                                          table_data=table_data,
-                                         success=f"Set {bin_location} quantity to 0.",
+                                         success=f"Cleared {bin_location}.",
                                          **get_current_status())
                 else:
                     table_data = [b.to_dict() for b in bins]
@@ -360,11 +366,13 @@ def apply_adjustment():
             return jsonify({'success': False, 'error': 'Bin not found'})
         b.adjust_quantity(adjustment)
         if b.quantity <= 0:
+            # Clear name and set quantity to 0 when removing
+            b.name = ""
             b.quantity = 0
             save_bins(bins)
             with state_lock:
                 current_bin_obj = None
-            return jsonify({'success': True, 'message': f'Set {local_bin} quantity to 0'})
+            return jsonify({'success': True, 'message': f'Cleared {local_bin}'})
         else:
             save_bins(bins)
             with state_lock:
