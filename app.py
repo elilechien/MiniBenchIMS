@@ -614,18 +614,44 @@ def start_tkinter_gui():
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
+    # Button frame for close and clear buttons
+    button_frame = tk.Frame(right_container, bg="#1e1e1e")
+    
     # Close Bin button
     def close_bin():
         with state_lock:
             global current_bin_obj
             current_bin_obj = None
 
-    close_button = tk.Button(right_container, text="Close Bin", font=("Helvetica", 16, "bold"),
+    close_button = tk.Button(button_frame, text="Close Bin", font=("Helvetica", 16, "bold"),
                             fg="#FFFFFF", bg="#dc3545",
                             command=close_bin,
                             relief="flat", bd=0,
                             width=12, height=2)
-    close_button.pack(pady=20)
+    close_button.pack(side="left", padx=(0, 10))
+
+    # Clear Bin button
+    def clear_bin():
+        with state_lock:
+            local_bin = current_bin_obj.location if current_bin_obj else None
+        if local_bin:
+            with csv_lock:
+                bins = load_bins()
+                b = find_bin(bins, local_bin)
+                if b:
+                    b.name = ""  # Clear name
+                    b.quantity = 0  # Set quantity to 0
+                    save_bins(bins)
+                    with state_lock:
+                        global current_bin_obj
+                        current_bin_obj = None
+
+    clear_button = tk.Button(button_frame, text="Clear Bin", font=("Helvetica", 16, "bold"),
+                            fg="#FFFFFF", bg="#ff8c00",  # Orange color
+                            command=clear_bin,
+                            relief="flat", bd=0,
+                            width=12, height=2)
+    clear_button.pack(side="left")
 
     # Row and Column Selection
     # Use global selection state instead of local variables

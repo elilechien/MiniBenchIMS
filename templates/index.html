@@ -379,15 +379,15 @@
                     </form>
                 </div>
 
-                <!-- Remove Item -->
-                <div class="operation-card">
-                    <h3>🗑️ Remove Item</h3>
-                    <form method="POST" action="/remove">
+                <!-- Clear Item -->
+                <div class="card">
+                    <h3>🗑️ Clear Item</h3>
+                    <form method="POST" action="/clear">
                         <div class="form-group">
-                            <label for="remove_bin">Bin Location:</label>
-                            <input type="text" id="remove_bin" name="bin_location" required placeholder="e.g., A1">
+                            <label for="clear_bin">Bin Location:</label>
+                            <input type="text" id="clear_bin" name="bin_location" required placeholder="e.g., A1">
                         </div>
-                        <button type="submit" class="btn btn-danger">Remove Item</button>
+                        <button type="submit" class="btn btn-danger">Clear Item</button>
                     </form>
                 </div>
             </div>
