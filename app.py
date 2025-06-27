@@ -850,9 +850,9 @@ def start_tkinter_gui():
                 root.no_bin_label = tk.Label(main_frame, text="No bin currently open", 
                                             font=("Helvetica", 48, "bold"),
                                             fg="#FFD700", bg="#1e1e1e")
-                root.no_bin_label.pack(expand=True, fill="both")
+                root.no_bin_label.grid(row=0, column=0, columnspan=2, sticky="nsew")
             else:
-                root.no_bin_label.pack(expand=True, fill="both")
+                root.no_bin_label.grid(row=0, column=0, columnspan=2, sticky="nsew")
             # Hide adjustment container when no bin is open
             adj_container.pack_forget()
             # Hide button frame when no bin is open
