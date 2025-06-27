@@ -859,22 +859,23 @@ def start_tkinter_gui():
             left_frame.grid_remove()
             right_frame.grid_remove()
             
+            # Show selection controls when no bin is open (place them first)
+            selection_frame.grid(row=0, column=0, columnspan=2, pady=20)
+            selection_button_frame.grid(row=1, column=0, columnspan=2, pady=10)
+            
+            # Show the no_bin_label below the selection controls
             if not hasattr(root, 'no_bin_label'):
                 root.no_bin_label = tk.Label(main_frame, text="No bin currently open", 
                                             font=("Helvetica", 48, "bold"),
                                             fg="#FFD700", bg="#1e1e1e")
-                root.no_bin_label.grid(row=0, column=0, columnspan=2, sticky="nsew")
+                root.no_bin_label.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=50)
             else:
-                root.no_bin_label.grid(row=0, column=0, columnspan=2, sticky="nsew")
+                root.no_bin_label.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=50)
             
             # Hide adjustment container when no bin is open
             adj_container.pack_forget()
             # Hide button frame when no bin is open
             button_frame.pack_forget()
-            
-            # Show selection controls when no bin is open
-            selection_frame.grid(row=0, column=0, columnspan=2, pady=20)
-            selection_button_frame.grid(row=1, column=0, columnspan=2, pady=10)
         root.after(200, update_display)
 
     update_display()
