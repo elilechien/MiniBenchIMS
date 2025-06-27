@@ -149,7 +149,7 @@ def button_pressed_selection():
     if selection_mode == "row":
         selection_mode = "column"
     else:
-        # Open the selected bin
+        # Open the selected bin when column is selected
         selected_bin = f"{valid_rows[selected_row_index]}{valid_columns[selected_column_index]}"
         with csv_lock:
             bins = load_bins()
