@@ -481,6 +481,14 @@ def update_bin():
         b.quantity = quantity
         b.location = location
         save_bins(bins)
+        
+        # Update current_bin_obj if it's the one being updated
+        with state_lock:
+            global current_bin_obj
+            if current_bin_obj and current_bin_obj.location == original_location:
+                current_bin_obj.name = name
+                current_bin_obj.quantity = quantity
+                current_bin_obj.location = location
     return jsonify({'success': True})
 
 @app.route("/update-all-bins", methods=['POST'])
