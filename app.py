@@ -556,7 +556,7 @@ def start_tkinter_gui():
     main_frame.rowconfigure(0, weight=1)
 
     left_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    left_frame.grid(row=0, column=0, sticky="nsew", padx=20)
+    left_frame.pack(side="left", expand=True, fill="both", padx=(20, 10))
     left_frame.rowconfigure(0, weight=1)
     left_frame.rowconfigure(1, weight=1)
     left_frame.rowconfigure(2, weight=1)
@@ -573,7 +573,7 @@ def start_tkinter_gui():
         label.pack(pady=20, anchor="center", fill="x", expand=True)
 
     right_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    right_frame.grid(row=0, column=1, sticky="nsew", padx=20)
+    right_frame.pack(side="right", expand=True, fill="both", padx=(10, 20))
     right_frame.rowconfigure(0, weight=1)
     right_frame.columnconfigure(0, weight=1)
 
@@ -797,8 +797,8 @@ def start_tkinter_gui():
                 root.no_bin_label.grid_remove()
             
             # Show the left and right frames
-            left_frame.grid()
-            right_frame.grid()
+            left_frame.pack(side="left", expand=True, fill="both", padx=(20, 10))
+            right_frame.pack(side="right", expand=True, fill="both", padx=(10, 20))
             
             # Hide selection controls when bin is open
             selection_frame.pack_forget()
