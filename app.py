@@ -708,14 +708,46 @@ def start_tkinter_gui():
         except Exception as e:
             print(f"Error opening selected bin: {e}")
             # Don't let the error break the application
+
+    # Clear selected bin button
+    def clear_selected_bin():
+        try:
+            # Read the current selection from the display labels
+            current_row = row_display.cget("text")
+            current_col = col_display.cget("text")
+            selected_bin = f"{current_row}{current_col}"
+            
+            with csv_lock:
+                bins = load_bins()
+                b = find_bin(bins, selected_bin)
+                if b:
+                    b.name = ""  # Clear name
+                    b.quantity = 0  # Set quantity to 0
+                    save_bins(bins)
+                    print(f"Cleared {selected_bin}")
+                else:
+                    print(f"{selected_bin} not found")
+        except Exception as e:
+            print(f"Error clearing selected bin: {e}")
+            # Don't let the error break the application
+
+    # Button frame for selection buttons
+    selection_button_frame = tk.Frame(right_container, bg="#1e1e1e")
     
-    open_button = tk.Button(right_container, text="Open Selected Bin", font=("Helvetica", 14, "bold"),
+    open_button = tk.Button(selection_button_frame, text="Open Selected Bin", font=("Helvetica", 14, "bold"),
                            fg="#FFFFFF", bg="#28a745",
                            command=open_selected_bin,
                            relief="flat", bd=0,
                            width=15, height=2)
-    open_button.pack(pady=10)
-    
+    open_button.pack(side="left", padx=(0, 10))
+
+    clear_selected_button = tk.Button(selection_button_frame, text="Clear Selected Bin", font=("Helvetica", 14, "bold"),
+                                     fg="#FFFFFF", bg="#ff8c00",  # Orange color
+                                     command=clear_selected_bin,
+                                     relief="flat", bd=0,
+                                     width=15, height=2)
+    clear_selected_button.pack(side="left")
+
     # Selection functions - use global state
     def select_row():
         global selection_mode
@@ -769,7 +801,7 @@ def start_tkinter_gui():
             adj_container.pack(expand=True, fill="both")
             # Hide selection controls when bin is open
             selection_frame.pack_forget()
-            open_button.pack_forget()
+            selection_button_frame.pack_forget()
             # Show button frame when bin is open
             button_frame.pack(pady=20)
             # Show left frame labels when bin is open
@@ -822,7 +854,7 @@ def start_tkinter_gui():
             button_frame.pack_forget()
             # Show selection controls when no bin is open
             selection_frame.pack(pady=20, anchor="center")
-            open_button.pack(pady=10, anchor="center")
+            selection_button_frame.pack(pady=10, anchor="center")
         root.after(200, update_display)
 
     update_display()
