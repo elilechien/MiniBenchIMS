@@ -580,14 +580,18 @@ def start_tkinter_gui():
                     fg="#FFD700", bg="#1e1e1e")
     title.pack(pady=40)
 
-    main_frame = tk.Frame(root, bg="#1e1e1e")
+    # Create a centered container for all content
+    center_container = tk.Frame(root, bg="#1e1e1e")
+    center_container.pack(expand=True, fill="both", padx=100, pady=50)
+
+    main_frame = tk.Frame(center_container, bg="#1e1e1e")
     main_frame.pack(expand=True, fill="both")
     main_frame.columnconfigure(0, weight=1)
     main_frame.columnconfigure(1, weight=1)
     main_frame.rowconfigure(0, weight=1)
 
     left_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    left_frame.grid(row=0, column=0, sticky="nsew", padx=60)
+    left_frame.grid(row=0, column=0, sticky="nsew", padx=40)
     left_frame.rowconfigure(0, weight=1)
     left_frame.rowconfigure(1, weight=1)
     left_frame.rowconfigure(2, weight=1)
@@ -604,7 +608,7 @@ def start_tkinter_gui():
         label.pack(pady=20, anchor="center", fill="x", expand=True)
 
     right_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    right_frame.grid(row=0, column=1, sticky="nsew", padx=60)
+    right_frame.grid(row=0, column=1, sticky="nsew", padx=40)
     right_frame.rowconfigure(0, weight=1)
     right_frame.columnconfigure(0, weight=1)
 
@@ -615,11 +619,15 @@ def start_tkinter_gui():
     adj_container = tk.Frame(right_container, bg="#1e1e1e")
     adj_container.pack(expand=True, fill="both")
 
-    adj_label_text = tk.Label(adj_container, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
+    # Center the adjustment content
+    adj_center = tk.Frame(adj_container, bg="#1e1e1e")
+    adj_center.pack(expand=True, fill="both")
+
+    adj_label_text = tk.Label(adj_center, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
                             anchor="center", justify="center")
     adj_label_text.pack(pady=(0, 5), anchor="center")
 
-    adj_value = tk.Label(adj_container, text="0", font=("Helvetica", 72, "bold"),
+    adj_value = tk.Label(adj_center, text="0", font=("Helvetica", 72, "bold"),
                         fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
     adj_value.pack(anchor="center")
 
@@ -665,9 +673,6 @@ def start_tkinter_gui():
                             width=12, height=2)
     clear_button.pack(side="left")
 
-    # Row and Column Selection
-    # Use global selection state instead of local variables
-    
     # Create selection frame
     selection_frame = tk.Frame(right_container, bg="#1e1e1e")
     
@@ -677,21 +682,25 @@ def start_tkinter_gui():
                                 anchor="center", justify="center")
     instruction_label.pack(pady=(0, 10))
     
+    # Selection controls container
+    selection_controls = tk.Frame(selection_frame, bg="#1e1e1e")
+    selection_controls.pack(anchor="center")
+    
     # Row selection
-    row_label = tk.Label(selection_frame, text="Row:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    row_label = tk.Label(selection_controls, text="Row:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                         anchor="center", justify="center")
     row_label.pack(side="left", padx=(0, 10))
     
-    row_display = tk.Label(selection_frame, text=valid_rows[0], font=("Helvetica", 24, "bold"), 
+    row_display = tk.Label(selection_controls, text=valid_rows[0], font=("Helvetica", 24, "bold"), 
                           fg="#FFD700", bg="#333333", relief="solid", bd=2, width=3)  # Start with row selected
     row_display.pack(side="left", padx=(0, 20))
     
     # Column selection
-    col_label = tk.Label(selection_frame, text="Column:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
+    col_label = tk.Label(selection_controls, text="Column:", font=("Helvetica", 20), fg="#FFFFFF", bg="#1e1e1e",
                         anchor="center", justify="center")
     col_label.pack(side="left", padx=(0, 10))
     
-    col_display = tk.Label(selection_frame, text=str(valid_columns[0]), font=("Helvetica", 24, "bold"), 
+    col_display = tk.Label(selection_controls, text=str(valid_columns[0]), font=("Helvetica", 24, "bold"), 
                           fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)
     col_display.pack(side="left")
     
