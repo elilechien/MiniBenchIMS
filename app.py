@@ -531,6 +531,21 @@ def update_all_bins():
             # Save all changes
             save_bins(bins)
             
+            # Update current_bin_obj if it's one of the bins being updated
+            with state_lock:
+                global current_bin_obj
+                if current_bin_obj:
+                    for change in changes:
+                        original_location = change.get('original_location', '').strip()
+                        if current_bin_obj.location == original_location:
+                            # Reload the current bin from the updated data
+                            updated_bin = find_bin(bins, original_location)
+                            if updated_bin:
+                                current_bin_obj.name = updated_bin.name
+                                current_bin_obj.quantity = updated_bin.quantity
+                                current_bin_obj.location = updated_bin.location
+                            break
+            
         return jsonify({'success': True, 'message': f'Updated {len(changes)} bins successfully'})
         
     except Exception as e:
