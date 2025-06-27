@@ -648,8 +648,8 @@ def start_tkinter_gui():
                         anchor="center", justify="center")
     row_label.pack(side="left", padx=(0, 10))
     
-    row_display = tk.Label(selection_frame, text=valid_rows[0], font=("Helvetica", 24, "bold"), 
-                          fg="#FFD700", bg="#333333", relief="solid", bd=2, width=3)  # Start with row selected
+    row_display = tk.Label(selection_frame, text=valid_rows[selected_row_index], font=("Helvetica", 24, "bold"), 
+                          fg="#FFD700", bg="#333333", relief="solid", bd=2, width=3)  # Use current global value
     row_display.pack(side="left", padx=(0, 20))
     
     # Column selection
@@ -657,8 +657,8 @@ def start_tkinter_gui():
                         anchor="center", justify="center")
     col_label.pack(side="left", padx=(0, 10))
     
-    col_display = tk.Label(selection_frame, text=str(valid_columns[0]), font=("Helvetica", 24, "bold"), 
-                          fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)
+    col_display = tk.Label(selection_frame, text=str(valid_columns[selected_column_index]), font=("Helvetica", 24, "bold"), 
+                          fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)  # Use current global value
     col_display.pack(side="left")
 
     # Open selected bin button
@@ -766,8 +766,15 @@ def start_tkinter_gui():
             pass  # No messages in queue
         
         # Update selection display based on global state
-        row_display.config(text=valid_rows[selected_row_index])
-        col_display.config(text=str(valid_columns[selected_column_index]))
+        current_row_text = valid_rows[selected_row_index]
+        current_col_text = str(valid_columns[selected_column_index])
+        
+        # Debug output
+        print(f"DEBUG: selected_row_index={selected_row_index}, selected_column_index={selected_column_index}")
+        print(f"DEBUG: current_row_text={current_row_text}, current_col_text={current_col_text}")
+        
+        row_display.config(text=current_row_text)
+        col_display.config(text=current_col_text)
         
         # Update highlighting based on selection mode
         if selection_mode == "row":
