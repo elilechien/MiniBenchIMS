@@ -52,7 +52,11 @@ class Bin:
 
     @staticmethod
     def from_dict(d):
-        return Bin(d['Name'], d['Quantity'], d['Location'])
+        # Handle NaN values from CSV
+        name = d['Name']
+        if pd.isna(name):
+            name = ""
+        return Bin(name, d['Quantity'], d['Location'])
 
 # --- Helper functions for CSV <-> Bin ---
 def load_bins():
@@ -836,8 +840,8 @@ def start_tkinter_gui():
             if available_width <= 1:
                 available_width = 400
             
-            # Handle empty bin name
-            if not local_name or local_name.strip() == "":
+            # Handle empty bin name - convert NaN to empty string
+            if local_name is None or (isinstance(local_name, float) and pd.isna(local_name)) or (isinstance(local_name, str) and local_name.strip() == ""):
                 part_text = "Empty"
             else:
                 part_text = f"{local_name}"
