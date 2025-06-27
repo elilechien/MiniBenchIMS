@@ -3,6 +3,7 @@ import threading
 import time
 from flask import Flask, render_template, send_file, request, jsonify
 import tkinter as tk
+from tkinter import messagebox
 from gpiozero import Button, RotaryEncoder
 import os
 import subprocess
@@ -725,7 +726,128 @@ def start_tkinter_gui():
                                      command=clear_selected_bin,
                                      relief="flat", bd=0,
                                      width=15, height=2)
-    clear_selected_button.pack(side="left")
+    clear_selected_button.pack(side="left", padx=(0, 10))
+
+    # Fill selected bin button
+    def fill_selected_bin():
+        try:
+            global current_bin_obj
+            # Read the current selection from the display labels
+            current_row = row_display.cget("text")
+            current_col = col_display.cget("text")
+            selected_bin = f"{current_row}{current_col}"
+            
+            # Create a new window for filling the bin
+            fill_window = tk.Toplevel(root)
+            fill_window.title(f"Fill Bin {selected_bin}")
+            fill_window.configure(bg="#1e1e1e")
+            fill_window.attributes('-fullscreen', True)
+            
+            # Center the window content
+            fill_frame = tk.Frame(fill_window, bg="#1e1e1e")
+            fill_frame.pack(expand=True, fill="both", padx=50, pady=50)
+            
+            # Title
+            title_label = tk.Label(fill_frame, text=f"Fill Bin {selected_bin}", 
+                                  font=("Helvetica", 36, "bold"), fg="#FFD700", bg="#1e1e1e")
+            title_label.pack(pady=(0, 40))
+            
+            # Part name entry
+            name_frame = tk.Frame(fill_frame, bg="#1e1e1e")
+            name_frame.pack(pady=20)
+            
+            name_label = tk.Label(name_frame, text="Part Name:", font=("Helvetica", 24), 
+                                 fg="#FFFFFF", bg="#1e1e1e")
+            name_label.pack()
+            
+            name_entry = tk.Entry(name_frame, font=("Helvetica", 20), width=30)
+            name_entry.pack(pady=10)
+            name_entry.focus()
+            
+            # Quantity entry
+            qty_frame = tk.Frame(fill_frame, bg="#1e1e1e")
+            qty_frame.pack(pady=20)
+            
+            qty_label = tk.Label(qty_frame, text="Quantity:", font=("Helvetica", 24), 
+                                fg="#FFFFFF", bg="#1e1e1e")
+            qty_label.pack()
+            
+            qty_entry = tk.Entry(qty_frame, font=("Helvetica", 20), width=10)
+            qty_entry.pack(pady=10)
+            qty_entry.insert(0, "1")  # Default quantity
+            
+            # Buttons frame
+            button_frame = tk.Frame(fill_frame, bg="#1e1e1e")
+            button_frame.pack(pady=40)
+            
+            def save_fill():
+                try:
+                    part_name = name_entry.get().strip()
+                    quantity = int(qty_entry.get().strip())
+                    
+                    if not part_name:
+                        tk.messagebox.showerror("Error", "Please enter a part name")
+                        return
+                    
+                    if quantity <= 0:
+                        tk.messagebox.showerror("Error", "Quantity must be greater than 0")
+                        return
+                    
+                    with csv_lock:
+                        bins = load_bins()
+                        b = find_bin(bins, selected_bin)
+                        if b:
+                            b.name = part_name
+                            b.quantity = quantity
+                        else:
+                            # Create new bin if it doesn't exist
+                            new_bin = Bin(part_name, quantity, selected_bin)
+                            bins.append(new_bin)
+                            bins.sort(key=lambda b: b.location)
+                        
+                        save_bins(bins)
+                    
+                    fill_window.destroy()
+                    tk.messagebox.showinfo("Success", f"Filled {selected_bin} with {part_name} (Qty: {quantity})")
+                    
+                except ValueError:
+                    tk.messagebox.showerror("Error", "Please enter a valid quantity")
+                except Exception as e:
+                    tk.messagebox.showerror("Error", f"Error filling bin: {e}")
+            
+            def cancel_fill():
+                fill_window.destroy()
+            
+            # Save button
+            save_button = tk.Button(button_frame, text="Save", font=("Helvetica", 20, "bold"),
+                                   fg="#FFFFFF", bg="#28a745",
+                                   command=save_fill,
+                                   relief="flat", bd=0,
+                                   width=10, height=2)
+            save_button.pack(side="left", padx=(0, 20))
+            
+            # Cancel button
+            cancel_button = tk.Button(button_frame, text="Cancel", font=("Helvetica", 20, "bold"),
+                                     fg="#FFFFFF", bg="#6c757d",
+                                     command=cancel_fill,
+                                     relief="flat", bd=0,
+                                     width=10, height=2)
+            cancel_button.pack(side="left")
+            
+            # Bind Enter key to save
+            fill_window.bind('<Return>', lambda e: save_fill())
+            fill_window.bind('<Escape>', lambda e: cancel_fill())
+            
+        except Exception as e:
+            print(f"Error opening fill window: {e}")
+            # Don't let the error break the application
+
+    fill_selected_button = tk.Button(selection_button_frame, text="Fill Selected Bin", font=("Helvetica", 20, "bold"),
+                                    fg="#FFFFFF", bg="#007bff",  # Blue color
+                                    command=fill_selected_bin,
+                                    relief="flat", bd=0,
+                                    width=15, height=2)
+    fill_selected_button.pack(side="left")
 
     # Selection functions - use global state
     def select_row():
