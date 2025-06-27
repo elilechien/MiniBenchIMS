@@ -171,7 +171,7 @@ def user_input_loop():
     global current_bin_obj
     time.sleep(2)
     while True:
-        user_cmd = input("Enter command (Add, Rem, Update, Open): ").strip()
+        user_cmd = input("Enter command (Add, Clear, Update, Open): ").strip()
 
         with csv_lock:
             df = pd.read_csv(csv_path)
@@ -191,7 +191,7 @@ def user_input_loop():
                     df.to_csv(csv_path, index=False)
                     print("Inventory updated.")
 
-        elif user_cmd == "Rem":
+        elif user_cmd == "Clear":
             Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
 
             with csv_lock:
@@ -201,11 +201,7 @@ def user_input_loop():
                     b.name = ""  # Clear name
                     b.quantity = 0  # Set quantity to 0
                     save_bins(bins)
-                    table_data = [b.to_dict() for b in bins]
-                    return render_template("index.html", 
-                                         table_data=table_data,
-                                         success=f"Cleared {Bin_location}.",
-                                         **get_current_status())
+                    print(f"Cleared {Bin_location}.")
                 else:
                     print(f"{Bin_location} not found.")
 
