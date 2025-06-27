@@ -77,6 +77,8 @@ def button_pressed(channel=None):
             return
         b.adjust_quantity(local_adjustment)
         if b.quantity <= 0:
+            # Clear name and set quantity to 0 when removing
+            b.name = ""
             b.quantity = 0
             save_bins(bins)
             with state_lock:
