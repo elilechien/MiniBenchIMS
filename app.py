@@ -634,8 +634,8 @@ def start_tkinter_gui():
                             width=12, height=2)
     clear_button.pack(side="left")
 
-    # Create selection frame
-    selection_frame = tk.Frame(right_container, bg="#1e1e1e")
+    # Selection controls - moved outside left/right frame structure
+    selection_frame = tk.Frame(main_frame, bg="#1e1e1e")
     
     # Instructions
     instruction_label = tk.Label(selection_frame, text="Row selected - use rotary encoder to change", 
@@ -660,7 +660,7 @@ def start_tkinter_gui():
     col_display = tk.Label(selection_frame, text=str(valid_columns[0]), font=("Helvetica", 24, "bold"), 
                           fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)
     col_display.pack(side="left")
-    
+
     # Open selected bin button
     def open_selected_bin():
         try:
@@ -797,11 +797,12 @@ def start_tkinter_gui():
             left_frame.grid()
             right_frame.grid()
             
+            # Hide selection controls when bin is open
+            selection_frame.grid_remove()
+            selection_button_frame.grid_remove()
+            
             # Show adjustment container when bin is open
             adj_container.pack(expand=True, fill="both")
-            # Hide selection controls when bin is open
-            selection_frame.pack_forget()
-            selection_button_frame.pack_forget()
             # Show button frame when bin is open
             button_frame.pack(pady=20)
             # Show left frame labels when bin is open
@@ -865,13 +866,15 @@ def start_tkinter_gui():
                 root.no_bin_label.grid(row=0, column=0, columnspan=2, sticky="nsew")
             else:
                 root.no_bin_label.grid(row=0, column=0, columnspan=2, sticky="nsew")
+            
             # Hide adjustment container when no bin is open
             adj_container.pack_forget()
             # Hide button frame when no bin is open
             button_frame.pack_forget()
+            
             # Show selection controls when no bin is open
-            selection_frame.pack(pady=20, anchor="center")
-            selection_button_frame.pack(pady=10, anchor="center")
+            selection_frame.grid(row=0, column=0, columnspan=2, pady=20)
+            selection_button_frame.grid(row=1, column=0, columnspan=2, pady=10)
         root.after(200, update_display)
 
     update_display()
