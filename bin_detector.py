@@ -24,6 +24,60 @@ BIN_NAMES = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8']
 # Calibration file
 CALIBRATION_FILE = "bin_calibration.json"
 
+# Debounce settings
+DEBOUNCE_TIME = 1.0  # seconds
+
+class BinDetector:
+    """Bin detector with debounce functionality"""
+    
+    def __init__(self, bin_positions, bin_tolerances):
+        self.bin_positions = bin_positions
+        self.bin_tolerances = bin_tolerances
+        self.last_bin = None
+        self.last_bin_time = 0
+        self.debounced_bin = None
+    
+    def get_active_bin(self, distance_inches):
+        """
+        Determine which bin is active based on distance and tolerance
+        Returns the bin if distance is within tolerance of bin center
+        """
+        for i, (bin_distance, tolerance) in enumerate(zip(self.bin_positions, self.bin_tolerances)):
+            # Check if distance is within tolerance of this bin
+            if abs(distance_inches - bin_distance) <= tolerance:
+                return BIN_NAMES[i], bin_distance, tolerance
+        return None, None, None
+    
+    def get_debounced_bin(self, distance_inches):
+        """
+        Get the active bin with debounce applied
+        Returns the debounced bin state
+        """
+        current_time = time.time()
+        active_bin, bin_distance, tolerance = self.get_active_bin(distance_inches)
+        
+        # If no bin is detected, reset debounce immediately
+        if active_bin is None:
+            self.last_bin = None
+            self.last_bin_time = 0
+            self.debounced_bin = None
+            return None, None, None
+        
+        # If this is a new bin or first detection
+        if active_bin != self.last_bin:
+            self.last_bin = active_bin
+            self.last_bin_time = current_time
+            return None, None, None  # Still in debounce period
+        
+        # If same bin detected, check if debounce period has passed
+        if current_time - self.last_bin_time >= DEBOUNCE_TIME:
+            if self.debounced_bin != active_bin:
+                self.debounced_bin = active_bin
+                return active_bin, bin_distance, tolerance
+        
+        # Still in debounce period
+        return None, None, None
+
 def load_calibration():
     """Load calibration data from file"""
     if os.path.exists(CALIBRATION_FILE):
@@ -297,11 +351,13 @@ def test_bin_detection():
     """Test bin detection with current calibration and tolerance"""
     
     bin_positions, bin_tolerances = load_calibration()
+    detector = BinDetector(bin_positions, bin_tolerances)
     
     print("=== Bin Detection Test ===")
     print("Current bin positions (inches from sensor):")
     for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
         print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
+    print(f"Debounce time: {DEBOUNCE_TIME} seconds")
     print("=" * 40)
     
     try:
@@ -312,25 +368,36 @@ def test_bin_detection():
             threshold_distance=0.1
         )
         
-        print("Taking 10 readings to test bin detection...")
+        print("Taking 20 readings to test bin detection with debounce...")
         print("-" * 40)
         
         readings = []
         bin_counts = {}
+        debounced_bin_counts = {}
         
-        for i in range(10):
+        for i in range(20):
             try:
                 distance_m = sensor.distance
                 distance_inches = distance_m * 39.3701
                 readings.append(distance_inches)
                 
-                active_bin, bin_distance, tolerance = get_active_bin(distance_inches, bin_positions, bin_tolerances)
+                # Get immediate detection
+                active_bin, bin_distance, tolerance = detector.get_active_bin(distance_inches)
+                
+                # Get debounced detection
+                debounced_bin, debounced_distance, debounced_tolerance = detector.get_debounced_bin(distance_inches)
                 
                 if active_bin:
                     bin_counts[active_bin] = bin_counts.get(active_bin, 0) + 1
-                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → {active_bin} (center: {bin_distance:.1f} in ± {tolerance:.1f} in)")
+                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → {active_bin} (center: {bin_distance:.1f} in ± {tolerance:.1f} in)", end='')
                 else:
-                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → No bin detected (outside tolerance)")
+                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → No bin detected (outside tolerance)", end='')
+                
+                if debounced_bin:
+                    debounced_bin_counts[debounced_bin] = debounced_bin_counts.get(debounced_bin, 0) + 1
+                    print(f" [DEBOUNCED: {debounced_bin}]")
+                else:
+                    print(" [No debounced bin]")
                 
                 time.sleep(0.5)
                 
@@ -348,8 +415,8 @@ def test_bin_detection():
             print(f"Average distance: {avg_distance:.1f} inches")
             print(f"Standard deviation: {std_dev:.1f} inches")
             
-            # Show bin detection results
-            print("\nBIN DETECTION RESULTS:")
+            # Show immediate bin detection results
+            print("\nIMMEDIATE BIN DETECTION RESULTS:")
             if bin_counts:
                 for bin_name in BIN_NAMES:
                     count = bin_counts.get(bin_name, 0)
@@ -357,6 +424,16 @@ def test_bin_detection():
                     print(f"  {bin_name}: {count}/{len(readings)} readings ({percentage:.0f}%)")
             else:
                 print("  No bins detected in any reading")
+            
+            # Show debounced bin detection results
+            print("\nDEBOUNCED BIN DETECTION RESULTS:")
+            if debounced_bin_counts:
+                for bin_name in BIN_NAMES:
+                    count = debounced_bin_counts.get(bin_name, 0)
+                    percentage = (count / len(readings)) * 100
+                    print(f"  {bin_name}: {count}/{len(readings)} readings ({percentage:.0f}%)")
+            else:
+                print("  No debounced bins detected")
                 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -373,11 +450,13 @@ def continuous_bin_monitoring():
     """Continuously monitor and display the active bin with tolerance"""
     
     bin_positions, bin_tolerances = load_calibration()
+    detector = BinDetector(bin_positions, bin_tolerances)
     
     print("\n=== Continuous Bin Monitoring ===")
     print("Current calibration:")
     for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
         print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
+    print(f"Debounce time: {DEBOUNCE_TIME} seconds")
     print("Press Ctrl+C to stop")
     print("-" * 40)
     
@@ -389,25 +468,42 @@ def continuous_bin_monitoring():
             threshold_distance=0.1
         )
         
-        last_bin = None
+        last_debounced_bin = None
+        debounce_start_time = None
         
         while True:
             try:
                 distance_m = sensor.distance
                 distance_inches = distance_m * 39.3701
-                active_bin, bin_distance, tolerance = get_active_bin(distance_inches, bin_positions, bin_tolerances)
                 
-                # Only update display if bin changes
-                if active_bin != last_bin:
-                    if active_bin:
-                        print(f"\n🎯 ACTIVE BIN: {active_bin} (Distance: {distance_inches:.1f} in, Center: {bin_distance:.1f} in ± {tolerance:.1f} in)")
+                # Get immediate detection
+                active_bin, bin_distance, tolerance = detector.get_active_bin(distance_inches)
+                
+                # Get debounced detection
+                debounced_bin, debounced_distance, debounced_tolerance = detector.get_debounced_bin(distance_inches)
+                
+                # Track debounce status
+                if active_bin and debounced_bin is None:
+                    if debounce_start_time is None:
+                        debounce_start_time = time.time()
+                        print(f"\n🔍 DETECTING: {active_bin} (Distance: {distance_inches:.1f} in) - Debouncing...")
+                elif active_bin is None:
+                    debounce_start_time = None
+                
+                # Only update display if debounced bin changes
+                if debounced_bin != last_debounced_bin:
+                    if debounced_bin:
+                        print(f"\n🎯 ACTIVE BIN: {debounced_bin} (Distance: {distance_inches:.1f} in, Center: {debounced_distance:.1f} in ± {debounced_tolerance:.1f} in)")
                     else:
                         print(f"\n❌ NO BIN: Distance {distance_inches:.1f} in (outside tolerance)")
-                    last_bin = active_bin
+                    last_debounced_bin = debounced_bin
                 else:
                     # Show current status
-                    if active_bin:
-                        print(f"Active: {active_bin} | Distance: {distance_inches:.1f} in | Center: {bin_distance:.1f} in ± {tolerance:.1f} in", end='\r')
+                    if debounced_bin:
+                        print(f"Active: {debounced_bin} | Distance: {distance_inches:.1f} in | Center: {debounced_distance:.1f} in ± {debounced_tolerance:.1f} in", end='\r')
+                    elif active_bin:
+                        remaining = DEBOUNCE_TIME - (time.time() - debounce_start_time) if debounce_start_time else 0
+                        print(f"Detecting: {active_bin} | Distance: {distance_inches:.1f} in | Debouncing... ({remaining:.1f}s remaining)", end='\r')
                     else:
                         print(f"No bin detected | Distance: {distance_inches:.1f} in", end='\r')
                 
@@ -441,7 +537,7 @@ def main():
     
     while True:
         print("\nSelect mode:")
-        print("1. Test bin detection (10 readings)")
+        print("1. Test bin detection (20 readings)")
         print("2. Continuous bin monitoring")
         print("3. Full calibration (individual bins)")
         print("4. Quick calibration (all bins)")
