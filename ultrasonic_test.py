@@ -144,7 +144,23 @@ def proximity_detection():
     """Test proximity detection with configurable threshold"""
     
     print("\n=== Proximity Detection Test ===")
-    threshold = float(input("Enter proximity threshold in meters (e.g., 0.5): ") or "0.5")
+    print("Enter threshold in meters or inches (e.g., 0.5m or 20in)")
+    threshold_input = input("Enter proximity threshold: ").strip().lower()
+    
+    # Parse input for meters or inches
+    if threshold_input.endswith('in'):
+        threshold_inches = float(threshold_input[:-2])
+        threshold = threshold_inches / 39.3701  # Convert inches to meters
+        print(f"Threshold set to {threshold:.3f} m ({threshold_inches:.1f} in)")
+    elif threshold_input.endswith('m'):
+        threshold = float(threshold_input[:-1])
+        threshold_inches = threshold * 39.3701
+        print(f"Threshold set to {threshold:.3f} m ({threshold_inches:.1f} in)")
+    else:
+        # Assume meters if no unit specified
+        threshold = float(threshold_input)
+        threshold_inches = threshold * 39.3701
+        print(f"Threshold set to {threshold:.3f} m ({threshold_inches:.1f} in)")
     
     try:
         sensor = DistanceSensor(
@@ -154,17 +170,18 @@ def proximity_detection():
             threshold_distance=threshold
         )
         
-        print(f"Monitoring for objects closer than {threshold} meters...")
+        print(f"Monitoring for objects closer than {threshold:.3f} m ({threshold_inches:.1f} in)...")
         print("Press Ctrl+C to stop")
-        print("-" * 40)
+        print("-" * 50)
         
         while True:
             try:
                 distance = sensor.distance
+                inches = distance * 39.3701  # Convert meters to inches
                 if distance < threshold:
-                    print(f"🚨 PROXIMITY ALERT: {distance:.3f} m ({distance*100:.1f} cm)")
+                    print(f"🚨 PROXIMITY ALERT: {distance:.3f} m ({distance*100:.1f} cm, {inches:.1f} in)")
                 else:
-                    print(f"Distance: {distance:.3f} m ({distance*100:.1f} cm) - Safe", end='\r')
+                    print(f"Distance: {distance:.3f} m ({distance*100:.1f} cm, {inches:.1f} in) - Safe", end='\r')
                 time.sleep(0.2)
             except KeyboardInterrupt:
                 print("\n\nProximity detection stopped")
