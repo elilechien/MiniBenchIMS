@@ -41,7 +41,8 @@ def test_ultrasonic_sensor():
             try:
                 distance = sensor.distance
                 readings.append(distance)
-                print(f"Reading {i+1:2d}: {distance:.3f} meters ({distance*100:.1f} cm)")
+                inches = distance * 39.3701  # Convert meters to inches
+                print(f"Reading {i+1:2d}: {distance:.3f} m ({distance*100:.1f} cm, {inches:.1f} in)")
                 time.sleep(0.5)  # Wait between readings
             except Exception as e:
                 print(f"Reading {i+1:2d}: Error - {e}")
@@ -55,14 +56,22 @@ def test_ultrasonic_sensor():
             max_distance = max(readings)
             std_dev = statistics.stdev(readings) if len(readings) > 1 else 0
             
+            # Convert to inches for display
+            avg_inches = avg_distance * 39.3701
+            median_inches = median_distance * 39.3701
+            min_inches = min_distance * 39.3701
+            max_inches = max_distance * 39.3701
+            std_dev_inches = std_dev * 39.3701
+            range_inches = (max_distance - min_distance) * 39.3701
+            
             print("-" * 30)
             print("STATISTICS:")
-            print(f"Average:     {avg_distance:.3f} m ({avg_distance*100:.1f} cm)")
-            print(f"Median:      {median_distance:.3f} m ({median_distance*100:.1f} cm)")
-            print(f"Min:         {min_distance:.3f} m ({min_distance*100:.1f} cm)")
-            print(f"Max:         {max_distance:.3f} m ({max_distance*100:.1f} cm)")
-            print(f"Std Dev:     {std_dev:.3f} m ({std_dev*100:.1f} cm)")
-            print(f"Range:       {max_distance - min_distance:.3f} m ({(max_distance - min_distance)*100:.1f} cm)")
+            print(f"Average:     {avg_distance:.3f} m ({avg_distance*100:.1f} cm, {avg_inches:.1f} in)")
+            print(f"Median:      {median_distance:.3f} m ({median_distance*100:.1f} cm, {median_inches:.1f} in)")
+            print(f"Min:         {min_distance:.3f} m ({min_distance*100:.1f} cm, {min_inches:.1f} in)")
+            print(f"Max:         {max_distance:.3f} m ({max_distance*100:.1f} cm, {max_inches:.1f} in)")
+            print(f"Std Dev:     {std_dev:.3f} m ({std_dev*100:.1f} cm, {std_dev_inches:.1f} in)")
+            print(f"Range:       {max_distance - min_distance:.3f} m ({(max_distance - min_distance)*100:.1f} cm, {range_inches:.1f} in)")
             
             # Quality assessment
             if std_dev < 0.01:  # Less than 1cm standard deviation
@@ -113,7 +122,8 @@ def continuous_monitoring():
         while True:
             try:
                 distance = sensor.distance
-                print(f"Distance: {distance:.3f} m ({distance*100:.1f} cm)", end='\r')
+                inches = distance * 39.3701  # Convert meters to inches
+                print(f"Distance: {distance:.3f} m ({distance*100:.1f} cm, {inches:.1f} in)", end='\r')
                 time.sleep(0.1)
             except KeyboardInterrupt:
                 print("\n\nMonitoring stopped by user")
