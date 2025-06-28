@@ -357,7 +357,6 @@ def test_bin_detection():
     print("Current bin positions (inches from sensor):")
     for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
         print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
-    print(f"Debounce time: {DEBOUNCE_TIME} seconds")
     print("=" * 40)
     
     try:
@@ -456,7 +455,6 @@ def continuous_bin_monitoring():
     print("Current calibration:")
     for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
         print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
-    print(f"Debounce time: {DEBOUNCE_TIME} seconds")
     print("Press Ctrl+C to stop")
     print("-" * 40)
     
@@ -502,8 +500,7 @@ def continuous_bin_monitoring():
                     if debounced_bin:
                         print(f"Active: {debounced_bin} | Distance: {distance_inches:.1f} in | Center: {debounced_distance:.1f} in ± {debounced_tolerance:.1f} in", end='\r')
                     elif active_bin:
-                        remaining = DEBOUNCE_TIME - (time.time() - debounce_start_time) if debounce_start_time else 0
-                        print(f"Detecting: {active_bin} | Distance: {distance_inches:.1f} in | Debouncing... ({remaining:.1f}s remaining)", end='\r')
+                        print(f"Detecting: {active_bin} | Distance: {distance_inches:.1f} in | Debouncing...", end='\r')
                     else:
                         print(f"No bin detected | Distance: {distance_inches:.1f} in", end='\r')
                 
