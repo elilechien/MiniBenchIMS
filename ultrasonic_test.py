@@ -1,4 +1,4 @@
-import RPi.GPIO as GPIO
+import gpiozero as GPIO
 import time
 
 TRIG = 23  # GPIO pin for trigger
