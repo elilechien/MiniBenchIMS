@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Bin Detector Script with Individual Calibration
+Bin Detector Script with Individual Calibration and Tolerance
 Uses ultrasonic sensor to determine which bin is currently active
-Supports individual calibration for each bin
+Supports individual calibration for each bin with tolerance settings
 """
 
 import time
@@ -18,6 +18,7 @@ ECHO_PIN = 24     # GPIO24
 
 # Default bin positions (in inches from sensor) - can be calibrated
 DEFAULT_BIN_POSITIONS = [1, 3, 5, 7, 9, 11, 13, 15]  # inches
+DEFAULT_BIN_TOLERANCES = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]  # inches (1/4 of 2" bin width)
 BIN_NAMES = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8']
 
 # Calibration file
@@ -29,17 +30,20 @@ def load_calibration():
         try:
             with open(CALIBRATION_FILE, 'r') as f:
                 data = json.load(f)
-                return data.get('bin_positions', DEFAULT_BIN_POSITIONS)
+                bin_positions = data.get('bin_positions', DEFAULT_BIN_POSITIONS)
+                bin_tolerances = data.get('bin_tolerances', DEFAULT_BIN_TOLERANCES)
+                return bin_positions, bin_tolerances
         except Exception as e:
             print(f"Warning: Could not load calibration file: {e}")
-            return DEFAULT_BIN_POSITIONS
-    return DEFAULT_BIN_POSITIONS
+            return DEFAULT_BIN_POSITIONS, DEFAULT_BIN_TOLERANCES
+    return DEFAULT_BIN_POSITIONS, DEFAULT_BIN_TOLERANCES
 
-def save_calibration(bin_positions):
+def save_calibration(bin_positions, bin_tolerances):
     """Save calibration data to file"""
     try:
         data = {
             'bin_positions': bin_positions,
+            'bin_tolerances': bin_tolerances,
             'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
         }
         with open(CALIBRATION_FILE, 'w') as f:
@@ -48,21 +52,23 @@ def save_calibration(bin_positions):
     except Exception as e:
         print(f"Error saving calibration: {e}")
 
-def get_active_bin(distance_inches, bin_positions):
+def get_active_bin(distance_inches, bin_positions, bin_tolerances):
     """
-    Determine which bin is active based on distance
-    Returns the first bin whose center distance is greater than the measured distance
+    Determine which bin is active based on distance and tolerance
+    Returns the bin if distance is within tolerance of bin center
     """
-    for i, bin_distance in enumerate(bin_positions):
-        if distance_inches < bin_distance:
-            return BIN_NAMES[i], bin_distance
-    return None, None
+    for i, (bin_distance, tolerance) in enumerate(zip(bin_positions, bin_tolerances)):
+        # Check if distance is within tolerance of this bin
+        if abs(distance_inches - bin_distance) <= tolerance:
+            return BIN_NAMES[i], bin_distance, tolerance
+    return None, None, None
 
-def calibrate_individual_bin(bin_name, expected_distance):
-    """Calibrate a single bin with multiple readings"""
+def calibrate_individual_bin(bin_name, expected_distance, current_tolerance):
+    """Calibrate a single bin with multiple readings and tolerance setting"""
     
     print(f"\n=== Calibrating {bin_name} ===")
     print(f"Expected position: {expected_distance} inches")
+    print(f"Current tolerance: {current_tolerance} inches")
     print("Place an object at this bin position")
     input("Press Enter when ready to measure...")
     
@@ -100,8 +106,8 @@ def calibrate_individual_bin(bin_name, expected_distance):
             if abs(difference) > 0.5:
                 print(f"  ⚠️  Large difference detected")
             
-            # Ask user to confirm or adjust
-            print(f"\nOptions:")
+            # Ask user to confirm or adjust position
+            print(f"\nPosition options:")
             print(f"1. Use measured distance ({avg_distance:.1f} in)")
             print(f"2. Use expected distance ({expected_distance} in)")
             print(f"3. Enter custom distance")
@@ -109,22 +115,59 @@ def calibrate_individual_bin(bin_name, expected_distance):
             choice = input("Enter choice (1-3): ").strip()
             
             if choice == "1":
-                return avg_distance
+                final_distance = avg_distance
             elif choice == "2":
-                return expected_distance
+                final_distance = expected_distance
             elif choice == "3":
-                custom_distance = float(input("Enter custom distance (inches): "))
-                return custom_distance
+                final_distance = float(input("Enter custom distance (inches): "))
             else:
                 print("Invalid choice, using measured distance")
-                return avg_distance
+                final_distance = avg_distance
+            
+            # Now set tolerance
+            print(f"\nTolerance setting for {bin_name}:")
+            print(f"Current tolerance: {current_tolerance} inches")
+            print(f"Recommended tolerance: 1/4 of bin width")
+            
+            # Calculate recommended tolerance based on bin spacing
+            if bin_name == 'A1':
+                # For first bin, use distance to next bin
+                next_bin_distance = 3.0  # Default A2 position
+                recommended_tolerance = (next_bin_distance - final_distance) / 2
+            elif bin_name == 'A8':
+                # For last bin, use distance from previous bin
+                prev_bin_distance = 13.0  # Default A7 position
+                recommended_tolerance = (final_distance - prev_bin_distance) / 2
+            else:
+                # For middle bins, use average of distances to adjacent bins
+                bin_index = BIN_NAMES.index(bin_name)
+                if bin_index > 0 and bin_index < len(BIN_NAMES) - 1:
+                    # This is a simplified calculation - in practice you'd use actual adjacent bin positions
+                    recommended_tolerance = 0.5  # Default 1/4 of 2" bin width
+                else:
+                    recommended_tolerance = 0.5
+            
+            print(f"Recommended tolerance: {recommended_tolerance:.1f} inches")
+            
+            tolerance_choice = input("Enter tolerance (inches) or press Enter for recommended: ").strip()
+            if tolerance_choice:
+                try:
+                    final_tolerance = float(tolerance_choice)
+                except ValueError:
+                    print("Invalid tolerance, using recommended")
+                    final_tolerance = recommended_tolerance
+            else:
+                final_tolerance = recommended_tolerance
+            
+            print(f"{bin_name} calibrated to {final_distance:.1f} in ± {final_tolerance:.1f} in")
+            return final_distance, final_tolerance
         else:
             print("No valid readings obtained")
-            return expected_distance
+            return expected_distance, current_tolerance
             
     except Exception as e:
         print(f"Error during calibration: {e}")
-        return expected_distance
+        return expected_distance, current_tolerance
     finally:
         try:
             sensor.close()
@@ -132,26 +175,27 @@ def calibrate_individual_bin(bin_name, expected_distance):
             pass
 
 def full_calibration():
-    """Full calibration for all bins"""
+    """Full calibration for all bins with tolerance settings"""
     
     print("\n=== Full Bin Calibration ===")
-    print("This will calibrate each bin individually")
+    print("This will calibrate each bin individually with tolerance settings")
     print("You can skip any bin by pressing Enter without input")
     print("-" * 50)
     
-    bin_positions = load_calibration().copy()
+    bin_positions, bin_tolerances = load_calibration()
     
     print("Current calibration:")
-    for i, (name, pos) in enumerate(zip(BIN_NAMES, bin_positions)):
-        print(f"  {name}: {pos} inches")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
     
     print("\nStarting calibration...")
     
     for i, bin_name in enumerate(BIN_NAMES):
         current_pos = bin_positions[i]
+        current_tolerance = bin_tolerances[i]
         print(f"\n{'='*20}")
         print(f"Calibrating {bin_name}")
-        print(f"Current position: {current_pos} inches")
+        print(f"Current position: {current_pos:.1f} in ± {current_tolerance:.1f} in")
         
         # Ask if user wants to calibrate this bin
         calibrate = input(f"Calibrate {bin_name}? (y/n, default=y): ").strip().lower()
@@ -160,31 +204,33 @@ def full_calibration():
             continue
         
         # Calibrate the bin
-        new_position = calibrate_individual_bin(bin_name, current_pos)
+        new_position, new_tolerance = calibrate_individual_bin(bin_name, current_pos, current_tolerance)
         bin_positions[i] = new_position
-        print(f"{bin_name} calibrated to {new_position:.1f} inches")
+        bin_tolerances[i] = new_tolerance
+        print(f"{bin_name} calibrated to {new_position:.1f} in ± {new_tolerance:.1f} in")
     
     # Show final calibration
     print("\n" + "="*50)
     print("FINAL CALIBRATION:")
     print("="*50)
-    for i, (name, pos) in enumerate(zip(BIN_NAMES, bin_positions)):
-        print(f"  {name}: {pos:.1f} inches")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
     
     # Save calibration
     save_choice = input("\nSave this calibration? (y/n): ").strip().lower()
     if save_choice in ['y', 'yes']:
-        save_calibration(bin_positions)
+        save_calibration(bin_positions, bin_tolerances)
         print("Calibration saved!")
     else:
         print("Calibration not saved")
 
 def quick_calibration():
-    """Quick calibration - measure all bins in sequence"""
+    """Quick calibration - measure all bins in sequence with tolerance"""
     
     print("\n=== Quick Calibration ===")
     print("This will measure all bins in sequence")
     print("Place an object at each bin position when prompted")
+    print("Tolerance will be set to 0.5 inches (1/4 of 2\" bin width)")
     print("-" * 40)
     
     try:
@@ -196,6 +242,7 @@ def quick_calibration():
         )
         
         bin_positions = []
+        bin_tolerances = []
         
         for i, bin_name in enumerate(BIN_NAMES):
             print(f"\nPosition object at {bin_name}")
@@ -216,22 +263,24 @@ def quick_calibration():
             if readings:
                 avg_distance = statistics.mean(readings)
                 bin_positions.append(avg_distance)
-                print(f"  {bin_name} calibrated to {avg_distance:.1f} inches")
+                bin_tolerances.append(0.5)  # Default tolerance
+                print(f"  {bin_name} calibrated to {avg_distance:.1f} in ± 0.5 in")
             else:
                 print(f"  No valid readings for {bin_name}, using default")
                 bin_positions.append(DEFAULT_BIN_POSITIONS[i])
+                bin_tolerances.append(DEFAULT_BIN_TOLERANCES[i])
         
         # Show results
         print("\n" + "="*40)
         print("CALIBRATION RESULTS:")
         print("="*40)
-        for i, (name, pos) in enumerate(zip(BIN_NAMES, bin_positions)):
-            print(f"  {name}: {pos:.1f} inches")
+        for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+            print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
         
         # Save calibration
         save_choice = input("\nSave this calibration? (y/n): ").strip().lower()
         if save_choice in ['y', 'yes']:
-            save_calibration(bin_positions)
+            save_calibration(bin_positions, bin_tolerances)
             print("Calibration saved!")
         else:
             print("Calibration not saved")
@@ -245,14 +294,14 @@ def quick_calibration():
             pass
 
 def test_bin_detection():
-    """Test bin detection with current calibration"""
+    """Test bin detection with current calibration and tolerance"""
     
-    bin_positions = load_calibration()
+    bin_positions, bin_tolerances = load_calibration()
     
     print("=== Bin Detection Test ===")
     print("Current bin positions (inches from sensor):")
-    for i, (name, pos) in enumerate(zip(BIN_NAMES, bin_positions)):
-        print(f"  {name}: {pos:.1f} inches")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
     print("=" * 40)
     
     try:
@@ -275,13 +324,13 @@ def test_bin_detection():
                 distance_inches = distance_m * 39.3701
                 readings.append(distance_inches)
                 
-                active_bin, bin_distance = get_active_bin(distance_inches, bin_positions)
+                active_bin, bin_distance, tolerance = get_active_bin(distance_inches, bin_positions, bin_tolerances)
                 
                 if active_bin:
                     bin_counts[active_bin] = bin_counts.get(active_bin, 0) + 1
-                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → {active_bin} (center: {bin_distance:.1f} in)")
+                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → {active_bin} (center: {bin_distance:.1f} in ± {tolerance:.1f} in)")
                 else:
-                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → No bin detected (too far)")
+                    print(f"Reading {i+1:2d}: {distance_inches:.1f} in → No bin detected (outside tolerance)")
                 
                 time.sleep(0.5)
                 
@@ -321,14 +370,14 @@ def test_bin_detection():
     return True
 
 def continuous_bin_monitoring():
-    """Continuously monitor and display the active bin"""
+    """Continuously monitor and display the active bin with tolerance"""
     
-    bin_positions = load_calibration()
+    bin_positions, bin_tolerances = load_calibration()
     
     print("\n=== Continuous Bin Monitoring ===")
     print("Current calibration:")
-    for i, (name, pos) in enumerate(zip(BIN_NAMES, bin_positions)):
-        print(f"  {name}: {pos:.1f} inches")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
     print("Press Ctrl+C to stop")
     print("-" * 40)
     
@@ -346,19 +395,19 @@ def continuous_bin_monitoring():
             try:
                 distance_m = sensor.distance
                 distance_inches = distance_m * 39.3701
-                active_bin, bin_distance = get_active_bin(distance_inches, bin_positions)
+                active_bin, bin_distance, tolerance = get_active_bin(distance_inches, bin_positions, bin_tolerances)
                 
                 # Only update display if bin changes
                 if active_bin != last_bin:
                     if active_bin:
-                        print(f"\n🎯 ACTIVE BIN: {active_bin} (Distance: {distance_inches:.1f} in, Center: {bin_distance:.1f} in)")
+                        print(f"\n🎯 ACTIVE BIN: {active_bin} (Distance: {distance_inches:.1f} in, Center: {bin_distance:.1f} in ± {tolerance:.1f} in)")
                     else:
-                        print(f"\n❌ NO BIN: Distance {distance_inches:.1f} in (too far)")
+                        print(f"\n❌ NO BIN: Distance {distance_inches:.1f} in (outside tolerance)")
                     last_bin = active_bin
                 else:
                     # Show current status
                     if active_bin:
-                        print(f"Active: {active_bin} | Distance: {distance_inches:.1f} in | Center: {bin_distance:.1f} in", end='\r')
+                        print(f"Active: {active_bin} | Distance: {distance_inches:.1f} in | Center: {bin_distance:.1f} in ± {tolerance:.1f} in", end='\r')
                     else:
                         print(f"No bin detected | Distance: {distance_inches:.1f} in", end='\r')
                 
@@ -382,13 +431,13 @@ def continuous_bin_monitoring():
 def main():
     """Main menu for bin detection testing"""
     
-    bin_positions = load_calibration()
+    bin_positions, bin_tolerances = load_calibration()
     
-    print("Bin Detection System with Calibration")
-    print("=" * 40)
+    print("Bin Detection System with Calibration and Tolerance")
+    print("=" * 50)
     print("Current bin positions:")
-    for i, (name, pos) in enumerate(zip(BIN_NAMES, bin_positions)):
-        print(f"  {name}: {pos:.1f} inches")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
     
     while True:
         print("\nSelect mode:")
@@ -420,7 +469,7 @@ def main():
 def view_calibration():
     """View current calibration and reset options"""
     
-    bin_positions = load_calibration()
+    bin_positions, bin_tolerances = load_calibration()
     
     print("\n=== Current Calibration ===")
     print(f"Calibration file: {CALIBRATION_FILE}")
@@ -434,9 +483,9 @@ def view_calibration():
         except:
             print("Last saved: Unknown")
     
-    print("\nBin positions:")
-    for i, (name, pos) in enumerate(zip(BIN_NAMES, bin_positions)):
-        print(f"  {name}: {pos:.1f} inches")
+    print("\nBin positions and tolerances:")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
     
     print("\nOptions:")
     print("1. Reset to default positions")
