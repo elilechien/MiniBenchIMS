@@ -56,26 +56,19 @@ class BinDetector:
         current_time = time.time()
         active_bin, bin_distance, tolerance = self.get_active_bin(distance_inches)
         
-        # If no bin is detected, reset debounce immediately
-        if active_bin is None:
-            self.last_bin = None
-            self.last_bin_time = 0
-            self.debounced_bin = None
-            return None, None, None
-        
-        # If this is a new bin or first detection
+        # If this is a new state (different from last detected)
         if active_bin != self.last_bin:
             self.last_bin = active_bin
             self.last_bin_time = current_time
             return None, None, None  # Still in debounce period
         
-        # If same bin detected, check if debounce period has passed
+        # If same state detected, check if debounce period has passed
         if current_time - self.last_bin_time >= DEBOUNCE_TIME:
             if self.debounced_bin != active_bin:
                 self.debounced_bin = active_bin
                 return active_bin, bin_distance, tolerance
         
-        # Still in debounce period
+        # Still in debounce period, return current debounced state
         return None, None, None
 
 def load_calibration():
