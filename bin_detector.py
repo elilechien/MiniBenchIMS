@@ -467,26 +467,14 @@ def continuous_bin_monitoring():
         )
         
         last_debounced_bin = None
-        debounce_start_time = None
         
         while True:
             try:
                 distance_m = sensor.distance
                 distance_inches = distance_m * 39.3701
                 
-                # Get immediate detection
-                active_bin, bin_distance, tolerance = detector.get_active_bin(distance_inches)
-                
                 # Get debounced detection
                 debounced_bin, debounced_distance, debounced_tolerance = detector.get_debounced_bin(distance_inches)
-                
-                # Track debounce status
-                if active_bin and debounced_bin is None:
-                    if debounce_start_time is None:
-                        debounce_start_time = time.time()
-                        print(f"\n🔍 DETECTING: {active_bin} (Distance: {distance_inches:.1f} in) - Debouncing...")
-                elif active_bin is None:
-                    debounce_start_time = None
                 
                 # Only update display if debounced bin changes
                 if debounced_bin != last_debounced_bin:
@@ -496,11 +484,9 @@ def continuous_bin_monitoring():
                         print(f"\n❌ NO BIN: Distance {distance_inches:.1f} in (outside tolerance)")
                     last_debounced_bin = debounced_bin
                 else:
-                    # Show current status
+                    # Show current status only for confirmed bins
                     if debounced_bin:
                         print(f"Active: {debounced_bin} | Distance: {distance_inches:.1f} in | Center: {debounced_distance:.1f} in ± {debounced_tolerance:.1f} in", end='\r')
-                    elif active_bin:
-                        print(f"Detecting: {active_bin} | Distance: {distance_inches:.1f} in | Debouncing...", end='\r')
                     else:
                         print(f"No bin detected | Distance: {distance_inches:.1f} in", end='\r')
                 
