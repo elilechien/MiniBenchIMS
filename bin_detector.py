@@ -591,6 +591,78 @@ def continuous_bin_monitoring():
         except:
             pass
 
+def test_tolerance_settings():
+    """Test tolerance settings with real-time feedback"""
+    
+    bin_positions, bin_tolerances = load_calibration()
+    detector = BinDetector(bin_positions, bin_tolerances)
+    
+    print("\n=== Tolerance Settings Test ===")
+    print("This will show real-time detection with current tolerance settings")
+    print("Move objects in front of the sensor to test detection")
+    print("Current tolerances:")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
+    print("Press Ctrl+C to stop")
+    print("-" * 60)
+    
+    try:
+        sensor = DistanceSensor(
+            echo=ECHO_PIN,
+            trigger=TRIGGER_PIN,
+            max_distance=4.0,
+            threshold_distance=0.1
+        )
+        
+        last_display = None
+        
+        while True:
+            try:
+                distance_m = sensor.distance
+                distance_inches = distance_m * 39.3701
+                
+                # Get immediate detection (before debounce)
+                active_bin, bin_distance, tolerance = detector.get_active_bin(distance_inches)
+                
+                # Get debounced detection
+                debounced_bin, debounced_distance, debounced_tolerance = detector.get_debounced_bin(distance_inches)
+                
+                # Create display string
+                if active_bin:
+                    if debounced_bin:
+                        display = f"🎯 CONFIRMED: {active_bin} | Distance: {distance_inches:.1f} in | Center: {bin_distance:.1f} in ± {tolerance:.1f} in"
+                    else:
+                        display = f"⏳ DETECTING: {active_bin} | Distance: {distance_inches:.1f} in | Center: {bin_distance:.1f} in ± {tolerance:.1f} in"
+                else:
+                    if debounced_bin is None:
+                        display = f"❌ NO BIN | Distance: {distance_inches:.1f} in (outside all tolerances)"
+                    else:
+                        display = f"📡 SCANNING | Distance: {distance_inches:.1f} in"
+                
+                # Only update if display changed
+                if display != last_display:
+                    print(f"\n{display}")
+                    last_display = display
+                else:
+                    print(f"{display}", end='\r')
+                
+                time.sleep(0.2)
+                
+            except KeyboardInterrupt:
+                print("\n\nTolerance test stopped by user")
+                break
+            except Exception as e:
+                print(f"\nError: {e}")
+                time.sleep(1)
+                
+    except Exception as e:
+        print(f"❌ Error in tolerance test: {e}")
+    finally:
+        try:
+            sensor.close()
+        except:
+            pass
+
 def main():
     """Main menu for bin detection testing"""
     
@@ -604,14 +676,16 @@ def main():
     
     while True:
         print("\nSelect mode:")
-        print("1. Test bin detection (20 readings)")
+        print("1. Test bin detection (30 readings)")
         print("2. Continuous bin monitoring")
         print("3. Full calibration (individual bins)")
         print("4. Quick calibration (all bins)")
         print("5. View/Reset calibration")
-        print("6. Exit")
+        print("6. Adjust tolerance")
+        print("7. Test tolerance settings")
+        print("8. Exit")
         
-        choice = input("\nEnter choice (1-6): ").strip()
+        choice = input("\nEnter choice (1-8): ").strip()
         
         if choice == "1":
             test_bin_detection()
@@ -624,10 +698,14 @@ def main():
         elif choice == "5":
             view_calibration()
         elif choice == "6":
+            adjust_tolerance()
+        elif choice == "7":
+            test_tolerance_settings()
+        elif choice == "8":
             print("Goodbye!")
             break
         else:
-            print("Invalid choice. Please enter 1-6.")
+            print("Invalid choice. Please enter 1-8.")
 
 def view_calibration():
     """View current calibration and reset options"""
@@ -650,13 +728,25 @@ def view_calibration():
     for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
         print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
     
-    print("\nOptions:")
-    print("1. Reset to default positions")
-    print("2. Back to main menu")
+    # Calculate and show tolerance statistics
+    avg_tolerance = sum(bin_tolerances) / len(bin_tolerances)
+    min_tolerance = min(bin_tolerances)
+    max_tolerance = max(bin_tolerances)
+    print(f"\nTolerance Statistics:")
+    print(f"  Average tolerance: {avg_tolerance:.1f} in")
+    print(f"  Min tolerance: {min_tolerance:.1f} in")
+    print(f"  Max tolerance: {max_tolerance:.1f} in")
     
-    choice = input("Enter choice (1-2): ").strip()
+    print("\nOptions:")
+    print("1. Adjust tolerance settings")
+    print("2. Reset to default positions")
+    print("3. Back to main menu")
+    
+    choice = input("Enter choice (1-3): ").strip()
     
     if choice == "1":
+        adjust_tolerance()
+    elif choice == "2":
         reset_choice = input("Are you sure you want to reset to default positions? (y/n): ").strip().lower()
         if reset_choice in ['y', 'yes']:
             if os.path.exists(CALIBRATION_FILE):
@@ -664,6 +754,189 @@ def view_calibration():
                 print("Calibration reset to defaults")
             else:
                 print("No calibration file found, already using defaults")
+    elif choice == "3":
+        return
+    else:
+        print("Invalid choice")
+
+def adjust_tolerance():
+    """Adjust tolerance settings for bins"""
+    
+    bin_positions, bin_tolerances = load_calibration()
+    
+    print("\n=== Tolerance Adjustment ===")
+    print("Current tolerances:")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
+    
+    print("\nTolerance adjustment options:")
+    print("1. Adjust individual bin tolerance")
+    print("2. Set all bins to same tolerance")
+    print("3. Use recommended tolerances")
+    print("4. Back to main menu")
+    
+    choice = input("\nEnter choice (1-4): ").strip()
+    
+    if choice == "1":
+        adjust_individual_tolerance(bin_positions, bin_tolerances)
+    elif choice == "2":
+        adjust_all_tolerances(bin_positions, bin_tolerances)
+    elif choice == "3":
+        set_recommended_tolerances(bin_positions, bin_tolerances)
+    elif choice == "4":
+        return
+    else:
+        print("Invalid choice")
+
+def adjust_individual_tolerance(bin_positions, bin_tolerances):
+    """Adjust tolerance for individual bins"""
+    
+    print("\n=== Individual Bin Tolerance Adjustment ===")
+    
+    while True:
+        print("\nCurrent tolerances:")
+        for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+            print(f"  {i+1}. {name}: {pos:.1f} in ± {tol:.1f} in")
+        print(f"  {len(BIN_NAMES)+1}. Back to tolerance menu")
+        
+        try:
+            choice = int(input(f"\nSelect bin to adjust (1-{len(BIN_NAMES)+1}): ").strip())
+            
+            if choice == len(BIN_NAMES) + 1:
+                break
+            elif 1 <= choice <= len(BIN_NAMES):
+                bin_index = choice - 1
+                bin_name = BIN_NAMES[bin_index]
+                current_tolerance = bin_tolerances[bin_index]
+                bin_position = bin_positions[bin_index]
+                
+                print(f"\nAdjusting tolerance for {bin_name}")
+                print(f"Current position: {bin_position:.1f} in")
+                print(f"Current tolerance: {current_tolerance:.1f} in")
+                
+                # Calculate recommended tolerance
+                recommended_tolerance = calculate_recommended_tolerance(bin_name, bin_position, bin_positions)
+                print(f"Recommended tolerance: {recommended_tolerance:.1f} in")
+                
+                new_tolerance_input = input("Enter new tolerance (inches) or press Enter for recommended: ").strip()
+                
+                if new_tolerance_input:
+                    try:
+                        new_tolerance = float(new_tolerance_input)
+                        if new_tolerance <= 0:
+                            print("Tolerance must be positive")
+                            continue
+                        bin_tolerances[bin_index] = new_tolerance
+                        print(f"{bin_name} tolerance updated to ± {new_tolerance:.1f} in")
+                    except ValueError:
+                        print("Invalid tolerance value")
+                        continue
+                else:
+                    bin_tolerances[bin_index] = recommended_tolerance
+                    print(f"{bin_name} tolerance set to recommended ± {recommended_tolerance:.1f} in")
+                
+                # Ask if user wants to save
+                save_choice = input("Save changes? (y/n): ").strip().lower()
+                if save_choice in ['y', 'yes']:
+                    save_calibration(bin_positions, bin_tolerances)
+                    print("Changes saved!")
+                else:
+                    print("Changes not saved")
+            else:
+                print("Invalid choice")
+                
+        except ValueError:
+            print("Please enter a valid number")
+        except Exception as e:
+            print(f"Error: {e}")
+
+def adjust_all_tolerances(bin_positions, bin_tolerances):
+    """Set all bins to the same tolerance"""
+    
+    print("\n=== Set All Bin Tolerances ===")
+    print("Current tolerances:")
+    for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+        print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
+    
+    try:
+        new_tolerance = float(input("\nEnter tolerance for all bins (inches): ").strip())
+        if new_tolerance <= 0:
+            print("Tolerance must be positive")
+            return
+        
+        # Update all tolerances
+        for i in range(len(bin_tolerances)):
+            bin_tolerances[i] = new_tolerance
+        
+        print(f"\nAll bin tolerances set to ± {new_tolerance:.1f} in")
+        
+        # Show updated tolerances
+        print("\nUpdated tolerances:")
+        for i, (name, pos, tol) in enumerate(zip(BIN_NAMES, bin_positions, bin_tolerances)):
+            print(f"  {name}: {pos:.1f} in ± {tol:.1f} in")
+        
+        # Ask if user wants to save
+        save_choice = input("\nSave changes? (y/n): ").strip().lower()
+        if save_choice in ['y', 'yes']:
+            save_calibration(bin_positions, bin_tolerances)
+            print("Changes saved!")
+        else:
+            print("Changes not saved")
+            
+    except ValueError:
+        print("Invalid tolerance value")
+    except Exception as e:
+        print(f"Error: {e}")
+
+def set_recommended_tolerances(bin_positions, bin_tolerances):
+    """Set all bins to recommended tolerances based on spacing"""
+    
+    print("\n=== Set Recommended Tolerances ===")
+    print("Calculating recommended tolerances based on bin spacing...")
+    
+    # Calculate recommended tolerances for all bins
+    for i, bin_name in enumerate(BIN_NAMES):
+        recommended_tolerance = calculate_recommended_tolerance(bin_name, bin_positions[i], bin_positions)
+        bin_tolerances[i] = recommended_tolerance
+        print(f"  {bin_name}: {bin_positions[i]:.1f} in ± {recommended_tolerance:.1f} in")
+    
+    # Ask if user wants to save
+    save_choice = input("\nSave recommended tolerances? (y/n): ").strip().lower()
+    if save_choice in ['y', 'yes']:
+        save_calibration(bin_positions, bin_tolerances)
+        print("Recommended tolerances saved!")
+    else:
+        print("Changes not saved")
+
+def calculate_recommended_tolerance(bin_name, bin_position, all_positions):
+    """Calculate recommended tolerance based on bin spacing"""
+    
+    bin_index = BIN_NAMES.index(bin_name)
+    
+    if bin_index == 0:
+        # First bin - use distance to next bin
+        if len(all_positions) > 1:
+            next_bin_distance = all_positions[1]
+            recommended_tolerance = (next_bin_distance - bin_position) / 2
+        else:
+            recommended_tolerance = 0.5  # Default
+    elif bin_index == len(BIN_NAMES) - 1:
+        # Last bin - use distance from previous bin
+        prev_bin_distance = all_positions[bin_index - 1]
+        recommended_tolerance = (bin_position - prev_bin_distance) / 2
+    else:
+        # Middle bin - use average of distances to adjacent bins
+        prev_bin_distance = all_positions[bin_index - 1]
+        next_bin_distance = all_positions[bin_index + 1]
+        recommended_tolerance = min(
+            (bin_position - prev_bin_distance) / 2,
+            (next_bin_distance - bin_position) / 2
+        )
+    
+    # Ensure minimum tolerance
+    recommended_tolerance = max(recommended_tolerance, 0.1)
+    
+    return recommended_tolerance
 
 if __name__ == "__main__":
     try:
