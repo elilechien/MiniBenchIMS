@@ -702,24 +702,24 @@ def start_tkinter_gui():
     
     def show_edit_screen():
         """Show edit screen"""
-        # Clear main frame
-        for widget in main_frame.winfo_children():
+        # Clear content frame instead of main frame
+        for widget in content_frame.winfo_children():
             widget.destroy()
         
         # Edit screen title
-        edit_title = tk.Label(main_frame, text="Nextbin edit", 
+        edit_title = tk.Label(content_frame, text="Nextbin edit", 
                              font=('Arial', 24, 'bold'), 
                              bg='#2c3e50', fg='white')
         edit_title.pack(pady=(0, 20))
         
         # Show selected bin
-        bin_label = tk.Label(main_frame, text=f"Selected Bin: {current_bin}", 
+        bin_label = tk.Label(content_frame, text=f"Selected Bin: {current_bin}", 
                             font=('Arial', 18), 
                             bg='#2c3e50', fg='white')
         bin_label.pack(pady=20)
         
         # Back to home button
-        home_btn = tk.Button(main_frame, text="← Back to Home", 
+        home_btn = tk.Button(content_frame, text="← Back to Home", 
                             font=('Arial', 14),
                             bg='#e74c3c', fg='white',
                             activebackground='#c0392b',
