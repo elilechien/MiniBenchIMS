@@ -8,6 +8,8 @@ from gpiozero import Button, RotaryEncoder
 import os
 import subprocess
 import queue
+import signal
+import sys
 
 # === OS CONFIG ===
 os.environ["DISPLAY"] = ":0"
@@ -18,6 +20,7 @@ csv_path = "inventory.csv"
 
 # === SHARED STATE ===
 current_bin_obj = None
+shutdown_event = threading.Event()
 
 # === THREAD SYNCHRONIZATION ===
 state_lock = threading.Lock()
@@ -32,6 +35,25 @@ selection_mode = "row"  # "row" or "column"
 
 # === THREAD COMMUNICATION ===
 gui_event_queue = queue.Queue()
+
+# === SIGNAL HANDLING ===
+def signal_handler(signum, frame):
+    """Handle Ctrl+C gracefully"""
+    print("\nShutting down gracefully...")
+    shutdown_event.set()
+    
+    # Close GPIO resources
+    try:
+        button.close()
+        encoder.close()
+    except:
+        pass
+    
+    # Exit the application
+    sys.exit(0)
+
+# Register signal handler
+signal.signal(signal.SIGINT, signal_handler)
 
 # --- Bin class definition ---
 class Bin:
@@ -184,16 +206,23 @@ def button_pressed_selection():
 def user_input_loop():
     global current_bin_obj
     time.sleep(2)
-    while True:
-        user_cmd = input("Enter command (Add, Clear, Update, Open): ").strip()
+    while not shutdown_event.is_set():
+        try:
+            user_cmd = input("Enter command (Add, Clear, Update, Open): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            # Handle Ctrl+C in the input loop
+            break
 
         with csv_lock:
             df = pd.read_csv(csv_path)
 
         if user_cmd == "Add":
-            Name = input("Component Name: ").strip()
-            Quantity = int(input("Component Quantity: ").strip())
-            Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
+            try:
+                Name = input("Component Name: ").strip()
+                Quantity = int(input("Component Quantity: ").strip())
+                Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
+            except (EOFError, KeyboardInterrupt):
+                break
 
             with csv_lock:
                 df = pd.read_csv(csv_path)
@@ -206,7 +235,10 @@ def user_input_loop():
                     print("Inventory updated.")
 
         elif user_cmd == "Clear":
-            Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
+            try:
+                Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
+            except (EOFError, KeyboardInterrupt):
+                break
 
             with csv_lock:
                 bins = load_bins()
@@ -220,7 +252,10 @@ def user_input_loop():
                     print(f"{Bin_location} not found.")
 
         elif user_cmd == "Open":
-            Bin_location = input("Open which bin (e.g., A1)? ").strip().upper()
+            try:
+                Bin_location = input("Open which bin (e.g., A1)? ").strip().upper()
+            except (EOFError, KeyboardInterrupt):
+                break
 
             with csv_lock:
                 bins = load_bins()
@@ -239,6 +274,8 @@ def user_input_loop():
 
         else:
             print("Unknown command.")
+    
+    print("User input loop terminated.")
 
 # === FLASK SERVER FOR INVENTORY ===
 app = Flask(__name__)
@@ -555,7 +592,14 @@ def start_flask():
     import logging
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
-    app.run(host="0.0.0.0", port=5000)
+    
+    # Run Flask in a way that can be interrupted
+    try:
+        app.run(host="0.0.0.0", port=5000, use_reloader=False)
+    except KeyboardInterrupt:
+        print("Flask server terminated.")
+    finally:
+        print("Flask server shutdown complete.")
 
 def start_tkinter_gui():
     """Start the Tkinter GUI"""
@@ -1021,10 +1065,53 @@ def start_tkinter_gui():
     # Start with home screen
     show_home_screen()
     
-    # Start the GUI
-    root.mainloop()
+    # Handle window close event
+    def on_closing():
+        print("Tkinter GUI closing...")
+        shutdown_event.set()
+        root.quit()
+        root.destroy()
+    
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    
+    # Start the GUI with shutdown checking
+    try:
+        while not shutdown_event.is_set():
+            root.update()
+            time.sleep(0.1)  # Small delay to allow checking shutdown event
+    except tk.TclError:
+        # Window was closed
+        pass
+    finally:
+        print("Tkinter GUI shutdown complete.")
 
 # === THREADING ===
-threading.Thread(target=user_input_loop, daemon=True).start()
-threading.Thread(target=start_flask, daemon=True).start()
-start_tkinter_gui()
+# Start background threads
+user_input_thread = threading.Thread(target=user_input_loop, daemon=True)
+flask_thread = threading.Thread(target=start_flask, daemon=True)
+
+user_input_thread.start()
+flask_thread.start()
+
+# Start Tkinter GUI (this will block until GUI closes)
+try:
+    start_tkinter_gui()
+except KeyboardInterrupt:
+    print("\nReceived interrupt signal...")
+finally:
+    # Set shutdown event to stop all threads
+    shutdown_event.set()
+    
+    # Wait for threads to finish (with timeout)
+    print("Waiting for threads to finish...")
+    user_input_thread.join(timeout=2)
+    flask_thread.join(timeout=2)
+    
+    # Close GPIO resources
+    try:
+        button.close()
+        encoder.close()
+    except:
+        pass
+    
+    print("Application shutdown complete.")
