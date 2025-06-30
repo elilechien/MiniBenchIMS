@@ -579,16 +579,36 @@ def start_tkinter_gui():
     main_frame = tk.Frame(root, bg='#2c3e50')
     main_frame.pack(expand=True, fill='both', padx=20, pady=20)
     
-    # Title label
-    title_label = tk.Label(main_frame, text="Nextbin home:", 
-                          font=('Arial', 24, 'bold'), 
-                          bg='#2c3e50', fg='white')
-    title_label.pack(pady=(0, 20))
-    
     # Content frame
     content_frame = tk.Frame(main_frame, bg='#2c3e50')
     content_frame.pack(expand=True, fill='both')
     
+    def show_home_screen():
+        """Show home screen with main options"""
+        # Clear content frame
+        for widget in content_frame.winfo_children():
+            widget.destroy()
+        
+        # Title label
+        title_label = tk.Label(content_frame, text="Nextbin Home:", 
+                              font=('Arial', 24, 'bold'), 
+                              bg='#2c3e50', fg='white')
+        title_label.pack(pady=(0, 40))
+        
+        # Main options frame
+        options_frame = tk.Frame(content_frame, bg='#2c3e50')
+        options_frame.pack()
+        
+        # Select Bin button
+        select_bin_btn = tk.Button(options_frame, text="Select Bin", 
+                                  font=('Arial', 16, 'bold'),
+                                  width=15, height=3,
+                                  bg='#3498db', fg='white',
+                                  activebackground='#2980b9',
+                                  command=show_row_selection)
+        select_bin_btn.pack(pady=20)
+
+        
     def show_row_selection():
         """Show row selection screen"""
         # Clear content frame
@@ -619,6 +639,14 @@ def start_tkinter_gui():
                            command=lambda r=row: select_row(r))
             btn.grid(row=row_num, column=col_num, padx=10, pady=10)
             row_buttons.append(btn)
+        
+        # Back to home button
+        back_btn = tk.Button(content_frame, text="← Back to Home", 
+                            font=('Arial', 12),
+                            bg='#e74c3c', fg='white',
+                            activebackground='#c0392b',
+                            command=show_home_screen)
+        back_btn.pack(pady=20)
     
     def select_row(row):
         """Handle row selection"""
@@ -695,11 +723,11 @@ def start_tkinter_gui():
                             font=('Arial', 14),
                             bg='#e74c3c', fg='white',
                             activebackground='#c0392b',
-                            command=show_row_selection)
+                            command=show_home_screen)
         home_btn.pack(pady=20)
     
-    # Start with row selection
-    show_row_selection()
+    # Start with home screen
+    show_home_screen()
     
     # Start the GUI
     root.mainloop()
