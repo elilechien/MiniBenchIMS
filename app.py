@@ -702,42 +702,7 @@ def start_tkinter_gui():
     
     def show_column_selection():
         """Show column selection screen"""
-        # Clear content frame
-        for widget in content_frame.winfo_children():
-            widget.destroy()
-        
-        # Column selection label
-        col_label = tk.Label(content_frame, text=f"Selected Row: {current_row}\nSelect Bin Column:", 
-                            font=('Arial', 18, 'bold'), 
-                            bg='#2c3e50', fg='white')
-        col_label.pack(pady=(0, 20))
-        
-        # Create 2x5 matrix frame for columns
-        matrix_frame = tk.Frame(content_frame, bg='#2c3e50')
-        matrix_frame.pack()
-        
-        # Create column buttons in 2x5 matrix
-        col_buttons = []
-        for i, col in enumerate(valid_cols):
-            row_num = i // 5  # Row in matrix (0 or 1)
-            col_num = i % 5   # Column in matrix (0-4)
-            
-            btn = tk.Button(matrix_frame, text=str(col), 
-                           font=('Arial', 16, 'bold'),
-                           width=8, height=3,
-                           bg='#34495e', fg='white',
-                           activebackground='#3498db',
-                           command=lambda c=col: select_column(c))
-            btn.grid(row=row_num, column=col_num, padx=10, pady=10)
-            col_buttons.append(btn)
-        
-        # Back button
-        back_btn = tk.Button(content_frame, text="← Back to Rows", 
-                            font=('Arial', 12),
-                            bg='#e74c3c', fg='white',
-                            activebackground='#c0392b',
-                            command=show_row_selection)
-        back_btn.pack(pady=20)
+        create_centered_matrix(content_frame, valid_cols, select_column, f"Selected Row: {current_row}\nSelect Bin Column:")
     
     def select_column(col):
         """Handle column selection"""
@@ -829,11 +794,11 @@ def start_tkinter_gui():
         add_btn.pack(pady=10)
         
         # Back to home button
-        home_btn = tk.Button(content_frame, text="← Back to Home", 
-                            font=('Arial', 12),
-                            bg='#95a5a6', fg='white',
-                            activebackground='#7f8c8d',
-                            command=show_home_screen)
+        home_btn = tk.Button(content_frame, text="🏠 Home", 
+                            font=('Arial', 12, 'bold'),
+                            bg='#e74c3c', fg='white',
+                            activebackground='#c0392b',
+                            command=go_home)
         home_btn.pack(pady=20)
     
     def show_adjustment_screen(bin_obj):
