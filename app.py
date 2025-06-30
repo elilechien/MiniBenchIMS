@@ -558,463 +558,150 @@ def start_flask():
     app.run(host="0.0.0.0", port=5000)
 
 def start_tkinter_gui():
-    import tkinter as tk
+    """Start the Tkinter GUI"""
+    
+    # Create main window
     root = tk.Tk()
-    root.title("MiniBench Dashboard")
-    root.attributes('-fullscreen', True)
-    root.configure(bg="#1e1e1e")
-
-    def exit_app():
-        root.quit()
-        root.destroy()
-        os._exit(0)
-
-    exit_button = tk.Button(root, text="X", font=("Helvetica", 16, "bold"),
-                           fg="#FFFFFF", bg="#FF4444",
-                           command=exit_app,
-                           relief="flat", bd=0,
-                           width=3, height=1)
-    exit_button.place(relx=0.98, rely=0.02, anchor="ne")
-
-    title = tk.Label(root, text="MiniBench Inventory", font=("Helvetica", 48, "bold"),
-                    fg="#FFD700", bg="#1e1e1e")
-    title.pack(pady=40)
-
-    main_frame = tk.Frame(root, bg="#1e1e1e")
-    main_frame.pack(expand=True, fill="both", padx=20, pady=20)
-    main_frame.columnconfigure(0, weight=1)
-    main_frame.columnconfigure(1, weight=1)
-    main_frame.rowconfigure(0, weight=1)
-
-    left_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    left_frame.pack(side="left", expand=True, fill="both", padx=(20, 10))
-    left_frame.rowconfigure(0, weight=1)
-    left_frame.rowconfigure(1, weight=1)
-    left_frame.rowconfigure(2, weight=1)
-    left_frame.rowconfigure(3, weight=1)
-
-    bin_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#00BFFF", bg="#1e1e1e",
-                        anchor="center", justify="center")
-    name_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#ADFF2F", bg="#1e1e1e",
-                        anchor="center", justify="center")
-    qty_label = tk.Label(left_frame, font=("Helvetica", 28), fg="#FF69B4", bg="#1e1e1e",
-                        anchor="center", justify="center")
-
-    for label in [bin_label, name_label, qty_label]:
-        label.pack(pady=20, anchor="center", fill="x", expand=True)
-
-    right_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    right_frame.pack(side="right", expand=True, fill="both", padx=(10, 20))
-    right_frame.rowconfigure(0, weight=1)
-    right_frame.columnconfigure(0, weight=1)
-
-    # Create a container for all right-side elements using pack
-    right_container = tk.Frame(right_frame, bg="#1e1e1e")
-    right_container.grid(row=0, column=0, sticky="nsew")
-
-    adj_container = tk.Frame(right_container, bg="#1e1e1e")
-    adj_container.pack(expand=True, fill="both")
-
-    adj_label_text = tk.Label(adj_container, text="Adjustment", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
-                            anchor="center", justify="center")
-    adj_label_text.pack(pady=(0, 5), anchor="center")
-
-    adj_value = tk.Label(adj_container, text="0", font=("Helvetica", 72, "bold"),
-                        fg="#FFFFFF", bg="#1e1e1e", anchor="center", justify="center")
-    adj_value.pack(anchor="center")
-
-    # Button frame for close and clear buttons
-    button_frame = tk.Frame(right_container, bg="#1e1e1e")
+    root.title("Nextbin")
+    root.geometry("800x600")
+    root.configure(bg='#2c3e50')
     
-    # Close Bin button
-    def close_bin():
-        with state_lock:
-            global current_bin_obj
-            current_bin_obj = None
-
-    close_button = tk.Button(button_frame, text="Close Bin", font=("Helvetica", 16, "bold"),
-                            fg="#FFFFFF", bg="#dc3545",
-                            command=close_bin,
-                            relief="flat", bd=0,
-                            width=12, height=2)
-    close_button.pack(side="left", padx=(0, 10))
-
-    # Clear Bin button
-    def clear_bin():
-        global current_bin_obj
-        if current_bin_obj is None:
-            return  # No bin is open, nothing to clear
+    # Global variables for the GUI
+    current_row = None
+    current_col = None
+    current_bin = None
+    
+    # Valid rows and columns
+    valid_rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    valid_cols = [1, 2, 3, 4, 5, 6, 7, 8]
+    
+    # Create main frame
+    main_frame = tk.Frame(root, bg='#2c3e50')
+    main_frame.pack(expand=True, fill='both', padx=20, pady=20)
+    
+    # Title label
+    title_label = tk.Label(main_frame, text="Nextbin home:", 
+                          font=('Arial', 24, 'bold'), 
+                          bg='#2c3e50', fg='white')
+    title_label.pack(pady=(0, 20))
+    
+    # Content frame
+    content_frame = tk.Frame(main_frame, bg='#2c3e50')
+    content_frame.pack(expand=True, fill='both')
+    
+    def show_row_selection():
+        """Show row selection screen"""
+        # Clear content frame
+        for widget in content_frame.winfo_children():
+            widget.destroy()
         
-        with state_lock:
-            local_bin = current_bin_obj.location
-        if local_bin:
-            with csv_lock:
-                bins = load_bins()
-                b = find_bin(bins, local_bin)
-                if b:
-                    b.name = ""  # Clear name
-                    b.quantity = 0  # Set quantity to 0
-                    save_bins(bins)
-                    with state_lock:
-                        current_bin_obj = None
-
-    clear_button = tk.Button(button_frame, text="Clear Bin", font=("Helvetica", 16, "bold"),
-                            fg="#FFFFFF", bg="#ff8c00",  # Orange color
-                            command=clear_bin,
-                            relief="flat", bd=0,
-                            width=12, height=2)
-    clear_button.pack(side="left")
-
-    # Selection controls - moved outside left/right frame structure
-    selection_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    
-    # Row selection
-    row_label = tk.Label(selection_frame, text="Row:", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
-                        anchor="center", justify="center")
-    row_label.pack(side="left", padx=(0, 10))
-    
-    row_display = tk.Label(selection_frame, text=valid_rows[selected_row_index], font=("Helvetica", 32, "bold"), 
-                          fg="#FFD700", bg="#333333", relief="solid", bd=2, width=3)  # Use current global value
-    row_display.pack(side="left", padx=(0, 20))
-    
-    # Column selection
-    col_label = tk.Label(selection_frame, text="Column:", font=("Helvetica", 28), fg="#FFFFFF", bg="#1e1e1e",
-                        anchor="center", justify="center")
-    col_label.pack(side="left", padx=(0, 10))
-    
-    col_display = tk.Label(selection_frame, text=str(valid_columns[selected_column_index]), font=("Helvetica", 32, "bold"), 
-                          fg="#00BFFF", bg="#1e1e1e", relief="solid", bd=2, width=3)  # Use current global value
-    col_display.pack(side="left")
-
-    # Open selected bin button
-    def open_selected_bin():
-        try:
-            global current_bin_obj
-            # Read the current selection from the display labels
-            current_row = row_display.cget("text")
-            current_col = col_display.cget("text")
-            selected_bin = f"{current_row}{current_col}"
-            
-            with csv_lock:
-                bins = load_bins()
-                b = find_bin(bins, selected_bin)
-                if b:
-                    with state_lock:
-                        current_bin_obj = b
-                else:
-                    # Create empty bin if it doesn't exist
-                    new_bin = Bin("", 0, selected_bin)
-                    bins.append(new_bin)
-                    bins.sort(key=lambda b: b.location)
-                    save_bins(bins)
-                    with state_lock:
-                        current_bin_obj = new_bin
-        except Exception as e:
-            print(f"Error opening selected bin: {e}")
-            # Don't let the error break the application
-
-    # Clear selected bin button
-    def clear_selected_bin():
-        try:
-            # Read the current selection from the display labels
-            current_row = row_display.cget("text")
-            current_col = col_display.cget("text")
-            selected_bin = f"{current_row}{current_col}"
-            
-            with csv_lock:
-                bins = load_bins()
-                b = find_bin(bins, selected_bin)
-                if b:
-                    b.name = ""  # Clear name
-                    b.quantity = 0  # Set quantity to 0
-                    save_bins(bins)
-                    print(f"Cleared {selected_bin}")
-                else:
-                    print(f"{selected_bin} not found")
-        except Exception as e:
-            print(f"Error clearing selected bin: {e}")
-            # Don't let the error break the application
-
-    # Button frame for selection buttons
-    selection_button_frame = tk.Frame(main_frame, bg="#1e1e1e")
-    
-    open_button = tk.Button(selection_button_frame, text="Open Selected Bin", font=("Helvetica", 20, "bold"),
-                           fg="#FFFFFF", bg="#28a745",
-                           command=open_selected_bin,
-                           relief="flat", bd=0,
-                           width=15, height=2)
-    open_button.pack(side="left", padx=(0, 10))
-
-    clear_selected_button = tk.Button(selection_button_frame, text="Clear Selected Bin", font=("Helvetica", 20, "bold"),
-                                     fg="#FFFFFF", bg="#ff8c00",  # Orange color
-                                     command=clear_selected_bin,
-                                     relief="flat", bd=0,
-                                     width=15, height=2)
-    clear_selected_button.pack(side="left", padx=(0, 10))
-
-    # Fill selected bin button
-    def fill_selected_bin():
-        try:
-            global current_bin_obj
-            # Read the current selection from the display labels
-            current_row = row_display.cget("text")
-            current_col = col_display.cget("text")
-            selected_bin = f"{current_row}{current_col}"
-            
-            # Create a new window for filling the bin
-            fill_window = tk.Toplevel(root)
-            fill_window.title(f"Fill Bin {selected_bin}")
-            fill_window.configure(bg="#1e1e1e")
-            fill_window.attributes('-fullscreen', True)
-            
-            # Center the window content
-            fill_frame = tk.Frame(fill_window, bg="#1e1e1e")
-            fill_frame.pack(expand=True, fill="both", padx=50, pady=50)
-            
-            # Title
-            title_label = tk.Label(fill_frame, text=f"Fill Bin {selected_bin}", 
-                                  font=("Helvetica", 36, "bold"), fg="#FFD700", bg="#1e1e1e")
-            title_label.pack(pady=(0, 40))
-            
-            # Part name entry
-            name_frame = tk.Frame(fill_frame, bg="#1e1e1e")
-            name_frame.pack(pady=20)
-            
-            name_label = tk.Label(name_frame, text="Part Name:", font=("Helvetica", 24), 
-                                 fg="#FFFFFF", bg="#1e1e1e")
-            name_label.pack()
-            
-            name_entry = tk.Entry(name_frame, font=("Helvetica", 20), width=30)
-            name_entry.pack(pady=10)
-            name_entry.focus()
-            
-            # Quantity entry
-            qty_frame = tk.Frame(fill_frame, bg="#1e1e1e")
-            qty_frame.pack(pady=20)
-            
-            qty_label = tk.Label(qty_frame, text="Quantity:", font=("Helvetica", 24), 
-                                fg="#FFFFFF", bg="#1e1e1e")
-            qty_label.pack()
-            
-            qty_entry = tk.Entry(qty_frame, font=("Helvetica", 20), width=10)
-            qty_entry.pack(pady=10)
-            qty_entry.insert(0, "1")  # Default quantity
-            
-            # Buttons frame
-            button_frame = tk.Frame(fill_frame, bg="#1e1e1e")
-            button_frame.pack(pady=40)
-            
-            def save_fill():
-                try:
-                    part_name = name_entry.get().strip()
-                    quantity = int(qty_entry.get().strip())
-                    
-                    if not part_name:
-                        tk.messagebox.showerror("Error", "Please enter a part name")
-                        return
-                    
-                    if quantity <= 0:
-                        tk.messagebox.showerror("Error", "Quantity must be greater than 0")
-                        return
-                    
-                    with csv_lock:
-                        bins = load_bins()
-                        b = find_bin(bins, selected_bin)
-                        if b:
-                            b.name = part_name
-                            b.quantity = quantity
-                        else:
-                            # Create new bin if it doesn't exist
-                            new_bin = Bin(part_name, quantity, selected_bin)
-                            bins.append(new_bin)
-                            bins.sort(key=lambda b: b.location)
-                        
-                        save_bins(bins)
-                    
-                    fill_window.destroy()
-                    tk.messagebox.showinfo("Success", f"Filled {selected_bin} with {part_name} (Qty: {quantity})")
-                    
-                except ValueError:
-                    tk.messagebox.showerror("Error", "Please enter a valid quantity")
-                except Exception as e:
-                    tk.messagebox.showerror("Error", f"Error filling bin: {e}")
-            
-            def cancel_fill():
-                fill_window.destroy()
-            
-            # Save button
-            save_button = tk.Button(button_frame, text="Save", font=("Helvetica", 20, "bold"),
-                                   fg="#FFFFFF", bg="#28a745",
-                                   command=save_fill,
-                                   relief="flat", bd=0,
-                                   width=10, height=2)
-            save_button.pack(side="left", padx=(0, 20))
-            
-            # Cancel button
-            cancel_button = tk.Button(button_frame, text="Cancel", font=("Helvetica", 20, "bold"),
-                                     fg="#FFFFFF", bg="#6c757d",
-                                     command=cancel_fill,
-                                     relief="flat", bd=0,
-                                     width=10, height=2)
-            cancel_button.pack(side="left")
-            
-            # Bind Enter key to save
-            fill_window.bind('<Return>', lambda e: save_fill())
-            fill_window.bind('<Escape>', lambda e: cancel_fill())
-            
-        except Exception as e:
-            print(f"Error opening fill window: {e}")
-            # Don't let the error break the application
-
-    fill_selected_button = tk.Button(selection_button_frame, text="Fill Selected Bin", font=("Helvetica", 20, "bold"),
-                                    fg="#FFFFFF", bg="#007bff",  # Blue color
-                                    command=fill_selected_bin,
-                                    relief="flat", bd=0,
-                                    width=15, height=2)
-    fill_selected_button.pack(side="left")
-
-    # Selection functions - use global state
-    def select_row():
-        global selection_mode
-        selection_mode = "row"
-        row_display.config(fg="#FFD700", bg="#333333")  # Highlight row
-        col_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight column
-    
-    def select_column():
-        global selection_mode
-        selection_mode = "column"
-        col_display.config(fg="#FFD700", bg="#333333")  # Highlight column
-        row_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight row
-    
-    # Bind click events to selection boxes
-    row_display.bind('<Button-1>', lambda e: select_row())
-    col_display.bind('<Button-1>', lambda e: select_column())
-    
-    # Remove the duplicate selection functions - they're now global
-
-    def update_display():
-        global selected_row_index, selected_column_index, selection_mode, current_bin_obj
+        # Row selection label
+        row_label = tk.Label(content_frame, text="Select Bin Row:", 
+                            font=('Arial', 18, 'bold'), 
+                            bg='#2c3e50', fg='white')
+        row_label.pack(pady=(0, 20))
         
-        # Check for messages from rotary encoder thread
-        try:
-            while not gui_event_queue.empty():
-                message_type, data = gui_event_queue.get_nowait()
-                if message_type == "OPEN_BIN":
-                    with csv_lock:
-                        bins = load_bins()
-                        b = find_bin(bins, data)
-                        if b:
-                            with state_lock:
-                                current_bin_obj = b
-        except queue.Empty:
-            pass  # No messages in queue
+        # Create 2x5 matrix frame for rows
+        matrix_frame = tk.Frame(content_frame, bg='#2c3e50')
+        matrix_frame.pack()
         
-        # Update selection display based on global state
-        current_row_text = valid_rows[selected_row_index]
-        current_col_text = str(valid_columns[selected_column_index])
+        # Create row buttons in 2x5 matrix
+        row_buttons = []
+        for i, row in enumerate(valid_rows):
+            row_num = i // 5  # Row in matrix (0 or 1)
+            col_num = i % 5   # Column in matrix (0-4)
+            
+            btn = tk.Button(matrix_frame, text=row, 
+                           font=('Arial', 16, 'bold'),
+                           width=8, height=3,
+                           bg='#34495e', fg='white',
+                           activebackground='#3498db',
+                           command=lambda r=row: select_row(r))
+            btn.grid(row=row_num, column=col_num, padx=10, pady=10)
+            row_buttons.append(btn)
+    
+    def select_row(row):
+        """Handle row selection"""
+        nonlocal current_row
+        current_row = row
+        show_column_selection()
+    
+    def show_column_selection():
+        """Show column selection screen"""
+        # Clear content frame
+        for widget in content_frame.winfo_children():
+            widget.destroy()
         
-        row_display.config(text=current_row_text)
-        col_display.config(text=current_col_text)
+        # Column selection label
+        col_label = tk.Label(content_frame, text=f"Selected Row: {current_row}\nSelect Bin Column:", 
+                            font=('Arial', 18, 'bold'), 
+                            bg='#2c3e50', fg='white')
+        col_label.pack(pady=(0, 20))
         
-        # Update highlighting based on selection mode
-        if selection_mode == "row":
-            row_display.config(fg="#FFD700", bg="#333333")  # Highlight row
-            col_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight column
-        else:
-            col_display.config(fg="#FFD700", bg="#333333")  # Highlight column
-            row_display.config(fg="#00BFFF", bg="#1e1e1e")  # Unhighlight row
+        # Create 2x5 matrix frame for columns
+        matrix_frame = tk.Frame(content_frame, bg='#2c3e50')
+        matrix_frame.pack()
         
-        with state_lock:
-            local_bin = current_bin_obj.location if current_bin_obj else None
-            local_name = current_bin_obj.name if current_bin_obj else None
-            local_quantity = current_bin_obj.quantity if current_bin_obj else None
-            local_adjustment = current_bin_obj.adjustment if current_bin_obj else None
+        # Create column buttons in 2x5 matrix
+        col_buttons = []
+        for i, col in enumerate(valid_cols):
+            row_num = i // 5  # Row in matrix (0 or 1)
+            col_num = i % 5   # Column in matrix (0-4)
+            
+            btn = tk.Button(matrix_frame, text=str(col), 
+                           font=('Arial', 16, 'bold'),
+                           width=8, height=3,
+                           bg='#34495e', fg='white',
+                           activebackground='#3498db',
+                           command=lambda c=col: select_column(c))
+            btn.grid(row=row_num, column=col_num, padx=10, pady=10)
+            col_buttons.append(btn)
         
-        if local_bin:
-            main_frame.pack(expand=True, fill="both")
-            title.pack(pady=40)
-            
-            # Hide the no_bin_label if it exists
-            if hasattr(root, 'no_bin_label'):
-                root.no_bin_label.grid_remove()
-            
-            # Show the left and right frames
-            left_frame.pack(side="left", expand=True, fill="both", padx=(20, 10))
-            right_frame.pack(side="right", expand=True, fill="both", padx=(10, 20))
-            
-            # Hide selection controls when bin is open
-            selection_frame.pack_forget()
-            selection_button_frame.pack_forget()
-            
-            # Show adjustment container when bin is open
-            adj_container.pack(expand=True, fill="both")
-            # Show button frame when bin is open
-            button_frame.pack(pady=20)
-            # Show left frame labels when bin is open
-            bin_label.pack(pady=20, anchor="center", fill="x", expand=True)
-            name_label.pack(pady=20, anchor="center", fill="x", expand=True)
-            qty_label.pack(pady=20, anchor="center", fill="x", expand=True)
-            bin_label.config(text=f"{local_bin}")
-            available_width = name_label.winfo_width()
-            if available_width <= 1:
-                available_width = 400
-            
-            # Handle empty bin name - convert NaN to empty string
-            if local_name is None or (isinstance(local_name, float) and pd.isna(local_name)) or (isinstance(local_name, str) and local_name.strip() == ""):
-                part_text = "Empty"
-            else:
-                part_text = f"{local_name}"
-            
-            font_sizes = [28, 24, 20, 16, 14, 12, 10]
-            fitted_text = part_text
-            for font_size in font_sizes:
-                test_font = ("Helvetica", font_size)
-                temp_label = tk.Label(root, text=part_text, font=test_font)
-                temp_label.update_idletasks()
-                text_width = temp_label.winfo_reqwidth()
-                temp_label.destroy()
-                if text_width <= available_width - 20:
-                    fitted_text = part_text
-                    name_label.config(text=fitted_text, font=test_font)
-                    break
-            else:
-                max_chars = available_width // 8
-                if len(part_text) > max_chars:
-                    truncated_name = local_name[:max_chars - 7] + "..."
-                    fitted_text = f"{truncated_name}"
-                name_label.config(text=fitted_text, font=("Helvetica", 28))
-            
-            # Handle quantity display
-            if local_quantity == 0:
-                qty_label.config(text="Qty: 0")
-            else:
-                qty_label.config(text=f"Qty: {local_quantity}")
-            
-            adj_label_text.config(text="Adjustment")
-            sign = "+" if local_adjustment > 0 else ""
-            adj_value.config(text=f"{sign}{local_adjustment}")
-        else:
-            # Hide left frame labels when no bin is open
-            bin_label.pack_forget()
-            name_label.pack_forget()
-            qty_label.pack_forget()
-            title.pack(pady=40)
-            
-            # Hide the left and right frames
-            left_frame.pack_forget()
-            right_frame.pack_forget()
-            
-            # Show selection controls when no bin is open
-            selection_frame.pack(pady=20)
-            selection_button_frame.pack(pady=10)
-            
-            # Hide adjustment container when no bin is open
-            adj_container.pack_forget()
-            # Hide button frame when no bin is open
-            button_frame.pack_forget()
-        root.after(200, update_display)
-
-    update_display()
+        # Back button
+        back_btn = tk.Button(content_frame, text="← Back to Rows", 
+                            font=('Arial', 12),
+                            bg='#e74c3c', fg='white',
+                            activebackground='#c0392b',
+                            command=show_row_selection)
+        back_btn.pack(pady=20)
+    
+    def select_column(col):
+        """Handle column selection"""
+        nonlocal current_col, current_bin
+        current_col = col
+        current_bin = f"{current_row}{current_col}"
+        show_edit_screen()
+    
+    def show_edit_screen():
+        """Show edit screen"""
+        # Clear main frame
+        for widget in main_frame.winfo_children():
+            widget.destroy()
+        
+        # Edit screen title
+        edit_title = tk.Label(main_frame, text="Nextbin edit", 
+                             font=('Arial', 24, 'bold'), 
+                             bg='#2c3e50', fg='white')
+        edit_title.pack(pady=(0, 20))
+        
+        # Show selected bin
+        bin_label = tk.Label(main_frame, text=f"Selected Bin: {current_bin}", 
+                            font=('Arial', 18), 
+                            bg='#2c3e50', fg='white')
+        bin_label.pack(pady=20)
+        
+        # Back to home button
+        home_btn = tk.Button(main_frame, text="← Back to Home", 
+                            font=('Arial', 14),
+                            bg='#e74c3c', fg='white',
+                            activebackground='#c0392b',
+                            command=show_row_selection)
+        home_btn.pack(pady=20)
+    
+    # Start with row selection
+    show_row_selection()
+    
+    # Start the GUI
     root.mainloop()
 
 # === THREADING ===
