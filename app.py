@@ -203,80 +203,6 @@ def button_pressed_selection():
                 # Send message to GUI to open the new bin
                 gui_event_queue.put(("OPEN_BIN", selected_bin))
 
-def user_input_loop():
-    global current_bin_obj
-    time.sleep(2)
-    while not shutdown_event.is_set():
-        try:
-            user_cmd = input("Enter command (Add, Clear, Update, Open): ").strip()
-        except (EOFError, KeyboardInterrupt):
-            # Handle Ctrl+C in the input loop
-            break
-
-        with csv_lock:
-            df = pd.read_csv(csv_path)
-
-        if user_cmd == "Add":
-            try:
-                Name = input("Component Name: ").strip()
-                Quantity = int(input("Component Quantity: ").strip())
-                Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
-            except (EOFError, KeyboardInterrupt):
-                break
-
-            with csv_lock:
-                df = pd.read_csv(csv_path)
-                if Bin_location in df["Location"].values:
-                    print("Bin already occupied.")
-                else:
-                    df.loc[len(df)] = [Name, Quantity, Bin_location]
-                    df.sort_values(by="Location", inplace=True)
-                    df.to_csv(csv_path, index=False)
-                    print("Inventory updated.")
-
-        elif user_cmd == "Clear":
-            try:
-                Bin_location = input("Bin Location (e.g., A1): ").strip().upper()
-            except (EOFError, KeyboardInterrupt):
-                break
-
-            with csv_lock:
-                bins = load_bins()
-                b = find_bin(bins, Bin_location)
-                if b:
-                    b.name = ""  # Clear name
-                    b.quantity = 0  # Set quantity to 0
-                    save_bins(bins)
-                    print(f"Cleared {Bin_location}.")
-                else:
-                    print(f"{Bin_location} not found.")
-
-        elif user_cmd == "Open":
-            try:
-                Bin_location = input("Open which bin (e.g., A1)? ").strip().upper()
-            except (EOFError, KeyboardInterrupt):
-                break
-
-            with csv_lock:
-                bins = load_bins()
-                b = find_bin(bins, Bin_location)
-                if not b:
-                    print(f"{Bin_location} not found.")
-                    continue
-
-            with state_lock:
-                global current_bin_obj
-                current_bin_obj = b
-
-        elif user_cmd == "Close":
-            with state_lock:
-                current_bin_obj = None
-
-        else:
-            print("Unknown command.")
-    
-    print("User input loop terminated.")
-
 # === FLASK SERVER FOR INVENTORY ===
 app = Flask(__name__)
 
@@ -793,7 +719,16 @@ def start_tkinter_gui():
                            command=lambda: add_to_bin(bin_obj))
         add_btn.pack(pady=10)
         
-        # Back to home button
+        # Cancel button
+        cancel_btn = tk.Button(options_frame, text="Cancel", 
+                              font=('Arial', 14, 'bold'),
+                              width=10, height=2,
+                              bg='#95a5a6', fg='white',
+                              activebackground='#7f8c8d',
+                              command=show_edit_screen)
+        cancel_btn.pack(side='left', padx=10)
+        
+        # Home button (separate from button frame)
         home_btn = tk.Button(content_frame, text="🏠 Home", 
                             font=('Arial', 12, 'bold'),
                             bg='#e74c3c', fg='white',
@@ -868,6 +803,14 @@ def start_tkinter_gui():
                               activebackground='#7f8c8d',
                               command=show_edit_screen)
         cancel_btn.pack(side='left', padx=10)
+        
+        # Home button (separate from button frame)
+        home_btn = tk.Button(content_frame, text="🏠 Home", 
+                            font=('Arial', 12, 'bold'),
+                            bg='#e74c3c', fg='white',
+                            activebackground='#c0392b',
+                            command=go_home)
+        home_btn.pack(pady=20)
     
     def save_adjustment(new_quantity_str):
         """Save the adjusted quantity"""
@@ -1026,6 +969,15 @@ def start_tkinter_gui():
                               command=cancel_add)
         cancel_btn.pack(side='left', padx=10)
         
+        # Home button
+        home_btn = tk.Button(button_frame, text="🏠 Home", 
+                            font=('Arial', 12, 'bold'),
+                            width=10, height=2,
+                            bg='#e74c3c', fg='white',
+                            activebackground='#c0392b',
+                            command=lambda: [dialog.destroy(), go_home()])
+        home_btn.pack(side='left', padx=10)
+        
         # Focus on name entry
         name_entry.focus()
     
@@ -1053,11 +1005,8 @@ def start_tkinter_gui():
         print("Tkinter GUI shutdown complete.")
 
 # === THREADING ===
-# Start background threads
-user_input_thread = threading.Thread(target=user_input_loop, daemon=True)
+# Start Flask server thread
 flask_thread = threading.Thread(target=start_flask, daemon=True)
-
-user_input_thread.start()
 flask_thread.start()
 
 # Start Tkinter GUI (this will block until GUI closes)
@@ -1071,7 +1020,6 @@ finally:
     
     # Wait for threads to finish (with timeout)
     print("Waiting for threads to finish...")
-    user_input_thread.join(timeout=2)
     flask_thread.join(timeout=2)
     
     # Close GPIO resources
