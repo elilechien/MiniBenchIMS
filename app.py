@@ -701,8 +701,8 @@ def start_tkinter_gui():
         show_edit_screen()
     
     def show_edit_screen():
-        """Show edit screen"""
-        # Clear content frame instead of main frame
+        """Show edit screen with bin contents and options"""
+        # Clear content frame
         for widget in content_frame.winfo_children():
             widget.destroy()
         
@@ -716,15 +716,307 @@ def start_tkinter_gui():
         bin_label = tk.Label(content_frame, text=f"Selected Bin: {current_bin}", 
                             font=('Arial', 18), 
                             bg='#2c3e50', fg='white')
-        bin_label.pack(pady=20)
+        bin_label.pack(pady=(0, 20))
+        
+        # Load and display bin contents
+        bins = load_bins()
+        bin_obj = find_bin(bins, current_bin)
+        
+        # Content display frame
+        content_display_frame = tk.Frame(content_frame, bg='#2c3e50')
+        content_display_frame.pack(pady=20, fill='x', padx=20)
+        
+        if bin_obj and bin_obj.name and bin_obj.quantity > 0:
+            # Show bin contents
+            contents_label = tk.Label(content_display_frame, text="Bin Contents:", 
+                                     font=('Arial', 16, 'bold'), 
+                                     bg='#2c3e50', fg='white')
+            contents_label.pack(anchor='w')
+            
+            item_label = tk.Label(content_display_frame, 
+                                 text=f"Item: {bin_obj.name}", 
+                                 font=('Arial', 14), 
+                                 bg='#2c3e50', fg='white')
+            item_label.pack(anchor='w', pady=(10, 5))
+            
+            quantity_label = tk.Label(content_display_frame, 
+                                     text=f"Quantity: {bin_obj.quantity}", 
+                                     font=('Arial', 14), 
+                                     bg='#2c3e50', fg='white')
+            quantity_label.pack(anchor='w', pady=(0, 10))
+        else:
+            # Show empty bin
+            empty_label = tk.Label(content_display_frame, text="Bin is empty", 
+                                  font=('Arial', 14), 
+                                  bg='#2c3e50', fg='#95a5a6')
+            empty_label.pack(pady=10)
+        
+        # Options frame
+        options_frame = tk.Frame(content_frame, bg='#2c3e50')
+        options_frame.pack(pady=20)
+        
+        # Adjust button
+        adjust_btn = tk.Button(options_frame, text="Adjust", 
+                              font=('Arial', 14, 'bold'),
+                              width=12, height=2,
+                              bg='#3498db', fg='white',
+                              activebackground='#2980b9',
+                              command=lambda: show_adjustment_screen(bin_obj))
+        adjust_btn.pack(pady=10)
+        
+        # Clear button
+        clear_btn = tk.Button(options_frame, text="Clear", 
+                             font=('Arial', 14, 'bold'),
+                             width=12, height=2,
+                             bg='#e74c3c', fg='white',
+                             activebackground='#c0392b',
+                             command=lambda: clear_bin(bin_obj))
+        clear_btn.pack(pady=10)
+        
+        # Add button
+        add_btn = tk.Button(options_frame, text="Add", 
+                           font=('Arial', 14, 'bold'),
+                           width=12, height=2,
+                           bg='#27ae60', fg='white',
+                           activebackground='#229954',
+                           command=lambda: add_to_bin(bin_obj))
+        add_btn.pack(pady=10)
         
         # Back to home button
         home_btn = tk.Button(content_frame, text="← Back to Home", 
-                            font=('Arial', 14),
-                            bg='#e74c3c', fg='white',
-                            activebackground='#c0392b',
+                            font=('Arial', 12),
+                            bg='#95a5a6', fg='white',
+                            activebackground='#7f8c8d',
                             command=show_home_screen)
         home_btn.pack(pady=20)
+    
+    def show_adjustment_screen(bin_obj):
+        """Show adjustment screen for quantity"""
+        # Clear content frame
+        for widget in content_frame.winfo_children():
+            widget.destroy()
+        
+        # Adjustment screen title
+        adjust_title = tk.Label(content_frame, text="Adjust Quantity", 
+                               font=('Arial', 24, 'bold'), 
+                               bg='#2c3e50', fg='white')
+        adjust_title.pack(pady=(0, 20))
+        
+        # Show current bin info
+        bin_info_label = tk.Label(content_frame, text=f"Bin: {current_bin}", 
+                                 font=('Arial', 16), 
+                                 bg='#2c3e50', fg='white')
+        bin_info_label.pack(pady=(0, 10))
+        
+        if bin_obj and bin_obj.name:
+            item_label = tk.Label(content_frame, text=f"Item: {bin_obj.name}", 
+                                 font=('Arial', 16), 
+                                 bg='#2c3e50', fg='white')
+            item_label.pack(pady=(0, 10))
+        
+        # Current quantity
+        current_qty = bin_obj.quantity if bin_obj else 0
+        qty_label = tk.Label(content_frame, text=f"Current Quantity: {current_qty}", 
+                            font=('Arial', 16), 
+                            bg='#2c3e50', fg='white')
+        qty_label.pack(pady=(0, 20))
+        
+        # Quantity input frame
+        input_frame = tk.Frame(content_frame, bg='#2c3e50')
+        input_frame.pack(pady=20)
+        
+        # New quantity label and entry
+        new_qty_label = tk.Label(input_frame, text="New Quantity:", 
+                                font=('Arial', 14), 
+                                bg='#2c3e50', fg='white')
+        new_qty_label.pack()
+        
+        qty_entry = tk.Entry(input_frame, font=('Arial', 16), width=10)
+        qty_entry.pack(pady=10)
+        qty_entry.insert(0, str(current_qty))
+        qty_entry.focus()
+        
+        # Buttons frame
+        button_frame = tk.Frame(content_frame, bg='#2c3e50')
+        button_frame.pack(pady=20)
+        
+        # Save button
+        save_btn = tk.Button(button_frame, text="Save", 
+                            font=('Arial', 14, 'bold'),
+                            width=10, height=2,
+                            bg='#27ae60', fg='white',
+                            activebackground='#229954',
+                            command=lambda: save_adjustment(qty_entry.get()))
+        save_btn.pack(side='left', padx=10)
+        
+        # Cancel button
+        cancel_btn = tk.Button(button_frame, text="Cancel", 
+                              font=('Arial', 14, 'bold'),
+                              width=10, height=2,
+                              bg='#95a5a6', fg='white',
+                              activebackground='#7f8c8d',
+                              command=show_edit_screen)
+        cancel_btn.pack(side='left', padx=10)
+    
+    def save_adjustment(new_quantity_str):
+        """Save the adjusted quantity"""
+        try:
+            new_quantity = int(new_quantity_str)
+            if new_quantity < 0:
+                messagebox.showerror("Error", "Quantity cannot be negative")
+                return
+            
+            # Load bins and update
+            bins = load_bins()
+            bin_obj = find_bin(bins, current_bin)
+            
+            if not bin_obj:
+                # Create new bin if it doesn't exist
+                bin_obj = Bin("", 0, current_bin)
+                bins.append(bin_obj)
+            
+            bin_obj.quantity = new_quantity
+            if new_quantity == 0:
+                bin_obj.name = ""  # Clear name if quantity is 0
+            
+            save_bins(bins)
+            messagebox.showinfo("Success", f"Quantity updated to {new_quantity}")
+            show_edit_screen()
+            
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid number")
+    
+    def clear_bin(bin_obj):
+        """Clear the bin contents"""
+        if not bin_obj or not bin_obj.name or bin_obj.quantity == 0:
+            messagebox.showinfo("Info", "Bin is already empty")
+            return
+        
+        # Ask for confirmation
+        result = messagebox.askyesno("Confirm Clear", 
+                                   f"Are you sure you want to clear bin {current_bin}?\n"
+                                   f"This will remove {bin_obj.name} (Qty: {bin_obj.quantity})")
+        
+        if result:
+            # Load bins and clear
+            bins = load_bins()
+            bin_obj = find_bin(bins, current_bin)
+            
+            if bin_obj:
+                bin_obj.name = ""
+                bin_obj.quantity = 0
+                save_bins(bins)
+                messagebox.showinfo("Success", f"Bin {current_bin} has been cleared")
+                show_edit_screen()
+    
+    def add_to_bin(bin_obj):
+        """Add items to bin (placeholder for barcode scanning)"""
+        # For now, show a simple input dialog
+        # In the future, this would integrate with camera/barcode scanning
+        
+        # Create a simple dialog for manual entry
+        dialog = tk.Toplevel()
+        dialog.title("Add to Bin")
+        dialog.geometry("400x300")
+        dialog.configure(bg='#2c3e50')
+        dialog.transient(root)  # Make dialog modal
+        dialog.grab_set()
+        
+        # Center the dialog
+        dialog.geometry("+%d+%d" % (root.winfo_rootx() + 50, root.winfo_rooty() + 50))
+        
+        # Dialog content
+        title_label = tk.Label(dialog, text="Add Item to Bin", 
+                              font=('Arial', 18, 'bold'), 
+                              bg='#2c3e50', fg='white')
+        title_label.pack(pady=(20, 10))
+        
+        bin_label = tk.Label(dialog, text=f"Bin: {current_bin}", 
+                            font=('Arial', 14), 
+                            bg='#2c3e50', fg='white')
+        bin_label.pack(pady=(0, 20))
+        
+        # Input frame
+        input_frame = tk.Frame(dialog, bg='#2c3e50')
+        input_frame.pack(pady=10)
+        
+        # Item name
+        name_label = tk.Label(input_frame, text="Item Name:", 
+                             font=('Arial', 12), 
+                             bg='#2c3e50', fg='white')
+        name_label.pack(anchor='w')
+        
+        name_entry = tk.Entry(input_frame, font=('Arial', 12), width=30)
+        name_entry.pack(pady=(5, 15), fill='x')
+        
+        # Quantity
+        qty_label = tk.Label(input_frame, text="Quantity:", 
+                            font=('Arial', 12), 
+                            bg='#2c3e50', fg='white')
+        qty_label.pack(anchor='w')
+        
+        qty_entry = tk.Entry(input_frame, font=('Arial', 12), width=30)
+        qty_entry.pack(pady=(5, 15), fill='x')
+        qty_entry.insert(0, "1")
+        
+        # Buttons
+        button_frame = tk.Frame(dialog, bg='#2c3e50')
+        button_frame.pack(pady=20)
+        
+        def save_item():
+            name = name_entry.get().strip()
+            qty_str = qty_entry.get().strip()
+            
+            if not name:
+                messagebox.showerror("Error", "Please enter an item name")
+                return
+            
+            try:
+                quantity = int(qty_str)
+                if quantity <= 0:
+                    messagebox.showerror("Error", "Quantity must be positive")
+                    return
+            except ValueError:
+                messagebox.showerror("Error", "Please enter a valid quantity")
+                return
+            
+            # Load bins and add item
+            bins = load_bins()
+            bin_obj = find_bin(bins, current_bin)
+            
+            if not bin_obj:
+                bin_obj = Bin(name, quantity, current_bin)
+                bins.append(bin_obj)
+            else:
+                bin_obj.name = name
+                bin_obj.quantity = quantity
+            
+            save_bins(bins)
+            messagebox.showinfo("Success", f"Added {name} (Qty: {quantity}) to bin {current_bin}")
+            dialog.destroy()
+            show_edit_screen()
+        
+        def cancel_add():
+            dialog.destroy()
+        
+        save_btn = tk.Button(button_frame, text="Save", 
+                            font=('Arial', 12, 'bold'),
+                            width=10, height=2,
+                            bg='#27ae60', fg='white',
+                            activebackground='#229954',
+                            command=save_item)
+        save_btn.pack(side='left', padx=10)
+        
+        cancel_btn = tk.Button(button_frame, text="Cancel", 
+                              font=('Arial', 12, 'bold'),
+                              width=10, height=2,
+                              bg='#95a5a6', fg='white',
+                              activebackground='#7f8c8d',
+                              command=cancel_add)
+        cancel_btn.pack(side='left', padx=10)
+        
+        # Focus on name entry
+        name_entry.focus()
     
     # Start with home screen
     show_home_screen()
