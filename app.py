@@ -627,70 +627,72 @@ def start_tkinter_gui():
     content_frame = tk.Frame(main_frame, bg='#2c3e50')
     content_frame.pack(expand=True, fill='both')
     
-    def show_home_screen():
-        """Show home screen with main options"""
+    def go_home():
+        """Clear current bin and return to home (row selection)"""
+        nonlocal current_row, current_col, current_bin
+        
+        # Clear current bin state
+        current_row = None
+        current_col = None
+        current_bin = None
+        
+        # Clear any open bin in the system
+        with state_lock:
+            global current_bin_obj
+            current_bin_obj = None
+        
+        # Show home screen (row selection)
+        show_home_screen()
+    
+    def create_centered_matrix(parent, items, command_func, title_text):
+        """Create a centered 2x5 matrix of buttons"""
         # Clear content frame
         for widget in content_frame.winfo_children():
             widget.destroy()
         
         # Title label
-        title_label = tk.Label(content_frame, text="Nextbin Home:", 
-                              font=('Arial', 24, 'bold'), 
+        title_label = tk.Label(content_frame, text=title_text, 
+                              font=('Arial', 18, 'bold'), 
                               bg='#2c3e50', fg='white')
-        title_label.pack(pady=(0, 40))
+        title_label.pack(pady=(0, 20))
         
-        # Main options frame
-        options_frame = tk.Frame(content_frame, bg='#2c3e50')
-        options_frame.pack()
-        
-        # Select Bin button
-        select_bin_btn = tk.Button(options_frame, text="Select Bin", 
-                                  font=('Arial', 16, 'bold'),
-                                  width=15, height=3,
-                                  bg='#3498db', fg='white',
-                                  activebackground='#2980b9',
-                                  command=show_row_selection)
-        select_bin_btn.pack(pady=20)
-
-        
-    def show_row_selection():
-        """Show row selection screen"""
-        # Clear content frame
-        for widget in content_frame.winfo_children():
-            widget.destroy()
-        
-        # Row selection label
-        row_label = tk.Label(content_frame, text="Select Bin Row:", 
-                            font=('Arial', 18, 'bold'), 
-                            bg='#2c3e50', fg='white')
-        row_label.pack(pady=(0, 20))
-        
-        # Create 2x5 matrix frame for rows
+        # Create 2x5 matrix frame for items
         matrix_frame = tk.Frame(content_frame, bg='#2c3e50')
         matrix_frame.pack()
         
-        # Create row buttons in 2x5 matrix
-        row_buttons = []
-        for i, row in enumerate(valid_rows):
-            row_num = i // 5  # Row in matrix (0 or 1)
-            col_num = i % 5   # Column in matrix (0-4)
+        # Calculate centering
+        total_items = len(items)
+        items_per_row = 5
+        num_rows = (total_items + items_per_row - 1) // items_per_row  # Ceiling division
+        
+        # Create buttons in 2x5 matrix
+        for i, item in enumerate(items):
+            row_num = i // items_per_row  # Row in matrix
+            col_num = i % items_per_row   # Column in matrix
             
-            btn = tk.Button(matrix_frame, text=row, 
+            btn = tk.Button(matrix_frame, text=str(item), 
                            font=('Arial', 16, 'bold'),
                            width=8, height=3,
                            bg='#34495e', fg='white',
                            activebackground='#3498db',
-                           command=lambda r=row: select_row(r))
+                           command=lambda x=item: command_func(x))
             btn.grid(row=row_num, column=col_num, padx=10, pady=10)
-            row_buttons.append(btn)
         
-        # Back to home button
-        back_btn = tk.Button(content_frame, text="← Back to Home", 
-                            font=('Arial', 12),
+        # Add Home button at the bottom
+        home_btn = tk.Button(content_frame, text="🏠 Home", 
+                            font=('Arial', 12, 'bold'),
                             bg='#e74c3c', fg='white',
                             activebackground='#c0392b',
-                            command=show_home_screen)
-        back_btn.pack(pady=20)
+                            command=go_home)
+        home_btn.pack(pady=20)
+    
+    def show_home_screen():
+        """Show home screen (row selection)"""
+        create_centered_matrix(content_frame, valid_rows, select_row, "Select Bin Row:")
+        
+    def show_row_selection():
+        """Show row selection screen (same as home screen now)"""
+        show_home_screen()
     
     def select_row(row):
         """Handle row selection"""
