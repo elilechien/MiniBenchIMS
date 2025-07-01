@@ -71,9 +71,8 @@ try:
             print("No Data Matrix found.")
 
         # Load and show image using OpenCV
-        img = cv2.imread(filename)
         if img is not None:
-            cv2.imshow("Live Capture", img)
+            #cv2.imshow("Live Capture", img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         else:
