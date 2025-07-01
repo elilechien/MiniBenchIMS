@@ -41,23 +41,21 @@ try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"frame.jpg"
 
-        # Capture using libcamera-still
-        subprocess.run([
-            "libcamera-still",
-            "-t", "1",              # Short exposure time
-            "-n",                   # No preview window
-            "-o", filename
-        ])
+        # Capture image
+        subprocess.run(["libcamera-still", "-t", "1", "-n", "-o", filename], check=True)
 
-        # Wait for file to be written
-        time.sleep(0.5)
-
-        # Check file exists and isn't empty
+        # Wait until the file is fully written
         img_path = Path(filename)
+        max_wait = 2.0  # seconds
+        start = time.time()
+
+        while (not img_path.exists() or img_path.stat().st_size == 0) and (time.time() - start < max_wait):
+            time.sleep(0.1)
+
         if img_path.exists() and img_path.stat().st_size > 0:
             img = Image.open(filename)
         else:
-            print("Image file not ready or empty.")
+            print("Image file not ready or failed to save.")
             continue
 
         img = Image.open(filename)
