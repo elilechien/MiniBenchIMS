@@ -1,6 +1,6 @@
 import cv2
 from datetime import datetime
-from pylibdmtx.pylibdmtx import decode
+from pyzbar.pyzbar import decode
 import numpy as np
 import re
 import subprocess
