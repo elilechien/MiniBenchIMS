@@ -42,7 +42,7 @@ cam_stream = subprocess.Popen([
 time.sleep(2)
 
 # Start camera
-cap = cv2.VideoCapture(video_output)
+cap = cv2.VideoCapture(0)
 
 if not cap.isOpened():
     print("Failed to open camera.")
@@ -80,7 +80,7 @@ try:
             break
 
         # Optional: throttle loop
-        # time.sleep(0.5)
+        time.sleep(0.5)
 
 except KeyboardInterrupt:
     print("Stopped by user.")
