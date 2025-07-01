@@ -45,12 +45,8 @@ try:
         subprocess.run(["libcamera-still", "-t", "1", "-n", "-o", filename], check=True)
 
         # Wait until the file is fully written
-        img_path = Path(filename)
-        max_wait = 2.0  # seconds
-        start = time.time()
-
-        while (not img_path.exists() or img_path.stat().st_size == 0) and (time.time() - start < max_wait):
-            time.sleep(0.1)
+        time.sleep(10)
+        img_path = Path(filename)   
 
         if img_path.exists() and img_path.stat().st_size > 0:
             img = Image.open(filename)
