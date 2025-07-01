@@ -42,6 +42,8 @@ time.sleep(3)
 
 # Start camera
 cap = cv2.VideoCapture("/dev/video10")
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
 
 if not cap.isOpened():
     print("Failed to open camera.")
@@ -50,6 +52,7 @@ if not cap.isOpened():
 try:
     while True:
         ret, frame = cap.read()
+        
         if not ret:
             print("Frame capture failed.")
             time.sleep(1)
