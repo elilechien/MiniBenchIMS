@@ -33,7 +33,7 @@ cam_stream = subprocess.Popen([
     "-t", "0",                       # Run indefinitely
     "--width", "640",
     "--height", "480",
-    "--framerate", "30",
+    "--framerate", "5",
     "--codec", "mjpeg",             # Must match v4l2loopback's accepted format
     "--output", "/dev/video10"
 ])
