@@ -5,6 +5,8 @@ import numpy as np
 import re
 import subprocess
 import time
+from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 def parse_digikey_data_matrix(raw: str):
     if raw.startswith("[)>06"):
@@ -26,10 +28,13 @@ def parse_digikey_data_matrix(raw: str):
             result["mid"] = field[3:]
     return result
 
+def try_decode(pil_img):
+    return decode(pil_img)
+
 # Start libcamera-vid to stream to v4l2loopback
 cam_stream = subprocess.Popen([
     "libcamera-vid",
-    "-t", "0",                       # Run indefinitely
+    "-t", "0",
     "--width", "1280",
     "--height", "720",
     "--framerate", "5",
@@ -39,15 +44,15 @@ cam_stream = subprocess.Popen([
 
 time.sleep(3)
 
-
 cap = cv2.VideoCapture("/dev/video10")
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 print("Resolution:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-
 if not cap.isOpened():
     print("Failed to open camera.")
     exit()
+
+executor = ThreadPoolExecutor(max_workers=1)
 
 try:
     while True:
@@ -58,23 +63,32 @@ try:
             time.sleep(1)
             continue
 
-        # Decode and time it
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        resized = cv2.resize(gray, (640, 480))
+        pil_img = Image.fromarray(resized)
+
+        # Decode with timeout
         start = time.time()
-        results = decode(frame)
+        future = executor.submit(try_decode, pil_img)
+        try:
+            results = future.result(timeout=0.5)
+        except TimeoutError:
+            print("Decode timed out.")
+            results = []
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
 
         if len(results):
             for result in results:
                 raw = result.data.decode("utf-8")
-                print(f"Raw: {repr(raw)}")  # Debug output
+                print(f"Raw: {repr(raw)}")
                 parsed = parse_digikey_data_matrix(raw)
                 if "digi_key_pn" in parsed:
                     print("DIGIKEY DATAMATRIX DETECTED:")
                     print(parsed)
 
         cv2.imshow("Live Feed", frame)
-        time.sleep(.25)
+        time.sleep(0.25)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -85,3 +99,4 @@ finally:
     cap.release()
     cam_stream.terminate()
     cv2.destroyAllWindows()
+    executor.shutdown()
