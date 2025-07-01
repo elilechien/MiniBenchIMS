@@ -27,27 +27,26 @@ def parse_digikey_data_matrix(raw: str):
             result["mid"] = field[3:]
     return result
 
+video_output = "/dev/video0"
 # Start libcamera-vid to stream to v4l2loopback
 cam_stream = subprocess.Popen([
     "libcamera-vid",
     "-t", "0",                       # Run indefinitely
     "--width", "640",
     "--height", "480",
-    "--framerate", "30",
+    "--framerate", "2",
     "--codec", "mjpeg",             # Must match v4l2loopback's accepted format
-    "--output", "/dev/video10"
+    "--output", video_output
 ])
 
-time.sleep(5)
+time.sleep(2)
 
 # Start camera
-cap = cv2.VideoCapture("/dev/video10")
+cap = cv2.VideoCapture(video_output)
 
 if not cap.isOpened():
     print("Failed to open camera.")
     exit()
-
-print("Camera stream started. Press 'q' to quit.")
 
 try:
     while True:
