@@ -4,6 +4,8 @@ from pylibdmtx.pylibdmtx import decode
 from PIL import Image
 import numpy as np
 import re
+import subprocess
+import time
 
 def parse_digikey_data_matrix(raw: str):
     if raw.startswith("[)>06"):
@@ -24,6 +26,19 @@ def parse_digikey_data_matrix(raw: str):
         elif field.startswith("12Z"):
             result["mid"] = field[3:]
     return result
+
+# Start libcamera-vid to stream to v4l2loopback
+cam_stream = subprocess.Popen([
+    "libcamera-vid",
+    "-t", "0",                       # Run indefinitely
+    "--width", "640",
+    "--height", "480",
+    "--framerate", "30",
+    "--codec", "mjpeg",             # Must match v4l2loopback's accepted format
+    "--output", "/dev/video10"
+])
+
+time.sleep(1)
 
 # Start camera
 cap = cv2.VideoCapture(10)
