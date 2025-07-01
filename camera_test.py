@@ -36,7 +36,7 @@ cam_stream = subprocess.Popen([
     "libcamera-vid",
     "-t", "0",
     "--framerate", "5",
-    "--codec", "mjpeg",
+    "--codec", "yuv420",
     "--output", "/dev/video10"
 ])
 
