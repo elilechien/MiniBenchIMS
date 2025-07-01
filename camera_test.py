@@ -1,7 +1,6 @@
 import cv2
 from datetime import datetime
-from pylibdmtx.pylibdmtx import decode
-from PIL import Image
+from pyzbar.pyzbar import decode
 import numpy as np
 import re
 import subprocess
@@ -47,8 +46,6 @@ if not cap.isOpened():
     print("Failed to open camera.")
     exit()
 
-frame_idx = 0
-
 try:
     while True:
         ret, frame = cap.read()
@@ -58,23 +55,19 @@ try:
             time.sleep(1)
             continue
 
-        frame_idx += 1
-        if frame_idx % 3 != 0:
-            continue  # Skip every 2 out of 3 frames
-
         # Convert to grayscale and downsize
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         resized = cv2.resize(gray, (320, 240))
-        pil_img = Image.fromarray(resized)
 
         # Decode and time it
         start = time.time()
-        results = decode(pil_img)
+        results = decode(resized)
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
 
         if len(results) == 1:
             raw = results[0].data.decode("utf-8")
+            print(f"Raw: {repr(raw)}")  # Debug output
             parsed = parse_digikey_data_matrix(raw)
             if "digi_key_pn" in parsed:
                 print("DIGIKEY DATAMATRIX DETECTED:")
@@ -94,4 +87,5 @@ except KeyboardInterrupt:
 
 finally:
     cap.release()
+    cam_stream.terminate()
     cv2.destroyAllWindows()
