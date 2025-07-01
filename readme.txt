@@ -15,3 +15,7 @@ python3 app.py
 # to install the camera firmware
 sudo apt install libcamera-apps
 libcamera - hello
+dtoverlay=imx708
+
+#isntall pylibdmtx
+sudo apt install libdmtx0a libdmtx-dev

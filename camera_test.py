@@ -52,13 +52,16 @@ try:
         img = Image.open(filename)
         results = decode(img)
 
-        raw = results[0].data.decode("utf-8")
+        if(len(results) == 1):
+            raw = results[0].data.decode("utf-8")
 
-        # Match known field prefixes
-        result = parse_digikey_data_matrix(raw)
-        if("digi_key_pn" in result):
-            print('DIGIKEY DATAMATRIX DETECTED.')
-            print(result)
+            # Match known field prefixes
+            result = parse_digikey_data_matrix(raw)
+            if("digi_key_pn" in result):
+                print('DIGIKEY DATAMATRIX DETECTED.')
+                print(result)
+            else:
+                print("Data Matrix found, but not parsed properly.")
         else:
             print("No Data Matrix found.")
 
