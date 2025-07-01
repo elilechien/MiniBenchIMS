@@ -33,12 +33,12 @@ cam_stream = subprocess.Popen([
     "-t", "0",                       # Run indefinitely
     "--width", "640",
     "--height", "480",
-    "--framerate", "10",
+    "--framerate", "30",
     "--codec", "mjpeg",             # Must match v4l2loopback's accepted format
     "--output", "/dev/video10"
 ])
 
-time.sleep(2)
+time.sleep(3)
 
 # Start camera
 cap = cv2.VideoCapture("/dev/video10")
