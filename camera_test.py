@@ -30,8 +30,8 @@ def parse_digikey_data_matrix(raw: str):
 cam_stream = subprocess.Popen([
     "libcamera-vid",
     "-t", "0",                       # Run indefinitely
-    "--width", "640",
-    "--height", "480",
+    "--width", "1920",
+    "--height", "1080",
     "--framerate", "5",
     "--codec", "mjpeg",
     "--output", "/dev/video10"
