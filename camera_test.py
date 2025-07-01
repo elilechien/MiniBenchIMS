@@ -52,6 +52,7 @@ try:
         ret, frame = cap.read()
         if not ret:
             print("Frame capture failed.")
+            time.sleep(1)
             continue
 
         # Convert frame to PIL format
