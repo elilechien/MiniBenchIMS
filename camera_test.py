@@ -41,7 +41,7 @@ cam_stream = subprocess.Popen([
 time.sleep(5)
 
 # Start camera
-cap = cv2.VideoCapture(10)
+cap = cv2.VideoCapture("/dev/video10")
 
 if not cap.isOpened():
     print("Failed to open camera.")
