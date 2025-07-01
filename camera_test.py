@@ -1,24 +1,15 @@
 import cv2
-import subprocess
 from datetime import datetime
-import time
-import os
-from PIL import Image
 from pylibdmtx.pylibdmtx import decode
-from pathlib import Path
+from PIL import Image
+import numpy as np
 import re
 
 def parse_digikey_data_matrix(raw: str):
-    # Remove the header
     if raw.startswith("[)>06"):
         raw = raw[5:]
-
-    # Split on ASCII Group Separator or Record Separator
-    # (\x1d = GS, \x1e = RS, \x04 = EOT)
     fields = re.split(r'[\x1d\x1e\x04]+', raw)
-
     result = {}
-
     for field in fields:
         if field.startswith("P") and not field.startswith("1P") and not field.startswith("30P"):
             result["digi_key_pn"] = field[1:]
@@ -32,57 +23,54 @@ def parse_digikey_data_matrix(raw: str):
             result["date_code"] = field[2:]
         elif field.startswith("12Z"):
             result["mid"] = field[3:]
-
     return result
+
+# Start camera
+cap = cv2.VideoCapture(0)
+
+if not cap.isOpened():
+    print("Failed to open camera.")
+    exit()
+
+print("Camera stream started. Press 'q' to quit.")
 
 try:
     while True:
-        # Generate timestamped filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"frame.jpg"
-
-        # Capture image
-        subprocess.run(["libcamera-still", "-t", "5", "-n", "-o", filename], check=True)
-
-        # Wait until the file is fully written
-        time.sleep(2)
-        img_path = Path(filename)   
-
-        if img_path.exists() and img_path.stat().st_size > 0:
-            img = Image.open(filename)
-        else:
-            print("Image file not ready or failed to save.")
+        ret, frame = cap.read()
+        if not ret:
+            print("Frame capture failed.")
             continue
 
-        img = Image.open(filename)
-        results = decode(img)
+        # Convert frame to PIL format
+        pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
-        if(len(results) == 1):
+        # Decode Data Matrix
+        results = decode(pil_img)
+
+        if len(results) == 1:
             raw = results[0].data.decode("utf-8")
-
-            # Match known field prefixes
-            result = parse_digikey_data_matrix(raw)
-            if("digi_key_pn" in result):
-                print('DIGIKEY DATAMATRIX DETECTED.')
-                print(result)
+            parsed = parse_digikey_data_matrix(raw)
+            if "digi_key_pn" in parsed:
+                print("DIGIKEY DATAMATRIX DETECTED:")
+                print(parsed)
             else:
                 print("Data Matrix found, but not parsed properly.")
+        elif len(results) > 1:
+            print("Multiple codes detected.")
         else:
             print("No Data Matrix found.")
 
-        # Load and show image using OpenCV
-        if img is not None:
-            #cv2.imshow("Live Capture", img)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
-            print("Failed to load captured image.")
+        # Optional: display video (comment out if headless)
+        cv2.imshow("Live Feed", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-        # Wait 2 seconds
-        time.sleep(2)
+        # Optional: throttle loop
+        # time.sleep(0.5)
 
 except KeyboardInterrupt:
     print("Stopped by user.")
 
 finally:
+    cap.release()
     cv2.destroyAllWindows()
