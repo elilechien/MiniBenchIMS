@@ -2,7 +2,7 @@ import cv2
 from datetime import datetime
 
 # Open the camera
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 
 if not cap.isOpened():
     print("Camera not found.")
