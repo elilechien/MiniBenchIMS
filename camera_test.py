@@ -87,8 +87,6 @@ try:
                     print("DIGIKEY DATAMATRIX DETECTED:")
                     print(parsed)
 
-        cv2.imshow("Live Feed", frame)
-        time.sleep(0.25)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
