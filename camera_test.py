@@ -78,7 +78,6 @@ try:
             print("No Data Matrix found.")
 
         # Optional: display video (comment out if headless)
-        cv2.imshow("Live Feed", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
