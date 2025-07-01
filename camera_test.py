@@ -55,12 +55,9 @@ try:
             time.sleep(1)
             continue
 
-        # Convert to grayscale and downsize
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
         # Decode and time it
         start = time.time()
-        results = decode(gray)
+        results = decode(frame)
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
 
