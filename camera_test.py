@@ -34,35 +34,44 @@ cam_stream = subprocess.Popen([
     "--width", "640",
     "--height", "480",
     "--framerate", "5",
-    "--codec", "mjpeg",             # Must match v4l2loopback's accepted format
+    "--codec", "mjpeg",
     "--output", "/dev/video10"
 ])
 
 time.sleep(3)
 
-# Start camera
 cap = cv2.VideoCapture("/dev/video10")
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-
 
 if not cap.isOpened():
     print("Failed to open camera.")
     exit()
 
+frame_idx = 0
+
 try:
     while True:
         ret, frame = cap.read()
-        
+
         if not ret:
             print("Frame capture failed.")
             time.sleep(1)
             continue
 
-        # Convert frame to PIL format
-        pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        frame_idx += 1
+        if frame_idx % 3 != 0:
+            continue  # Skip every 2 out of 3 frames
 
-        # Decode Data Matrix
+        # Convert to grayscale and downsize
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        resized = cv2.resize(gray, (320, 240))
+        pil_img = Image.fromarray(resized)
+
+        # Decode and time it
+        start = time.time()
         results = decode(pil_img)
+        elapsed = time.time() - start
+        print(f"Decode time: {elapsed:.3f}s")
 
         if len(results) == 1:
             raw = results[0].data.decode("utf-8")
@@ -77,7 +86,6 @@ try:
         else:
             print("No Data Matrix found.")
 
-        # Optional: display video (comment out if headless)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
