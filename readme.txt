@@ -11,3 +11,7 @@ python3 app.py
 
 # To run the dashboard on the screen:
 @chromium-browser --kiosk http://MiniBench.local:5005/Dashboard
+
+# to install the camera firmware
+sudo apt install libcamera-apps
+libcamera - hello

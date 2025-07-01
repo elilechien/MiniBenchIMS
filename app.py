@@ -719,16 +719,7 @@ def start_tkinter_gui():
                            command=lambda: add_to_bin(bin_obj))
         add_btn.pack(pady=10)
         
-        # Cancel button
-        cancel_btn = tk.Button(options_frame, text="Cancel", 
-                              font=('Arial', 14, 'bold'),
-                              width=10, height=2,
-                              bg='#95a5a6', fg='white',
-                              activebackground='#7f8c8d',
-                              command=show_edit_screen)
-        cancel_btn.pack(side='left', padx=10)
-        
-        # Home button (separate from button frame)
+        # Home button
         home_btn = tk.Button(content_frame, text="🏠 Home", 
                             font=('Arial', 12, 'bold'),
                             bg='#e74c3c', fg='white',
@@ -804,7 +795,7 @@ def start_tkinter_gui():
                               command=show_edit_screen)
         cancel_btn.pack(side='left', padx=10)
         
-        # Home button (separate from button frame)
+        # Home button
         home_btn = tk.Button(content_frame, text="🏠 Home", 
                             font=('Arial', 12, 'bold'),
                             bg='#e74c3c', fg='white',
