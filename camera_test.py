@@ -30,17 +30,20 @@ def parse_digikey_data_matrix(raw: str):
 cam_stream = subprocess.Popen([
     "libcamera-vid",
     "-t", "0",                       # Run indefinitely
-    "--width", "1920",
-    "--height", "1080",
+    "--width", "1280",
+    "--height", "720",
     "--framerate", "5",
     "--codec", "mjpeg",
     "--output", "/dev/video10"
 ])
 
-time.sleep(3)
+time.sleep(1)
+
 
 cap = cv2.VideoCapture("/dev/video10")
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+print("Resolution:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
 
 if not cap.isOpened():
     print("Failed to open camera.")
@@ -61,20 +64,17 @@ try:
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
 
-        if len(results) == 1:
-            raw = results[0].data.decode("utf-8")
-            print(f"Raw: {repr(raw)}")  # Debug output
-            parsed = parse_digikey_data_matrix(raw)
-            if "digi_key_pn" in parsed:
-                print("DIGIKEY DATAMATRIX DETECTED:")
-                print(parsed)
-            else:
-                print("Data Matrix found, but not parsed properly.")
-        elif len(results) > 1:
-            print("Multiple codes detected.")
+        if len(results):
+            for result in results:
+                raw = result.data.decode("utf-8")
+                print(f"Raw: {repr(raw)}")  # Debug output
+                parsed = parse_digikey_data_matrix(raw)
+                if "digi_key_pn" in parsed:
+                    print("DIGIKEY DATAMATRIX DETECTED:")
+                    print(parsed)
 
         cv2.imshow("Live Feed", frame)
-        time.sleep(.5)
+        time.sleep(.25)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
