@@ -35,13 +35,13 @@ cam_stream = subprocess.Popen([
     "--height", "480",
     "--framerate", "10",
     "--codec", "mjpeg",             # Must match v4l2loopback's accepted format
-    "--output", "/dev/video0"
+    "--output", "/dev/video10"
 ])
 
 time.sleep(2)
 
 # Start camera
-cap = cv2.VideoCapture("/dev/video0")
+cap = cv2.VideoCapture("/dev/video10")
 
 if not cap.isOpened():
     print("Failed to open camera.")
