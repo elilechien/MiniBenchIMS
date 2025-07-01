@@ -42,7 +42,7 @@ time.sleep(3)
 
 # Start camera
 cap = cv2.VideoCapture("/dev/video10")
-cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
 
 if not cap.isOpened():
@@ -81,9 +81,6 @@ try:
         cv2.imshow("Live Feed", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
-        # Optional: throttle loop
-        time.sleep(0.5)
 
 except KeyboardInterrupt:
     print("Stopped by user.")
