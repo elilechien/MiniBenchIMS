@@ -33,7 +33,7 @@ cam_stream = subprocess.Popen([
     "--width", "640",
     "--height", "480",
     "--framerate", "5",
-    "--codec", "yuv420",
+    "--codec", "mjpeg",
     "--output", "/dev/video10"
 ])
 
@@ -78,6 +78,8 @@ try:
             print("Multiple codes detected.")
         else:
             print("No Data Matrix found.")
+
+        cv2.imshow("Live Feed", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
