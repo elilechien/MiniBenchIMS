@@ -5,6 +5,7 @@ import time
 import os
 from PIL import Image
 from pylibdmtx.pylibdmtx import decode
+from pathlib import Path
 import re
 
 def parse_digikey_data_matrix(raw: str):
@@ -48,8 +49,16 @@ try:
             "-o", filename
         ])
 
-        time.sleep(.2)
-        print(f"Saved {filename}")
+        # Wait for file to be written
+        time.sleep(0.5)
+
+        # Check file exists and isn't empty
+        img_path = Path(filename)
+        if img_path.exists() and img_path.stat().st_size > 0:
+            img = Image.open(filename)
+        else:
+            print("Image file not ready or empty.")
+            continue
 
         img = Image.open(filename)
         results = decode(img)
