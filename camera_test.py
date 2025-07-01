@@ -26,7 +26,7 @@ def parse_digikey_data_matrix(raw: str):
     return result
 
 # Start camera
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(10)
 
 if not cap.isOpened():
     print("Failed to open camera.")
