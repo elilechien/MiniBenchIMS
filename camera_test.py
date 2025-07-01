@@ -38,7 +38,7 @@ cam_stream = subprocess.Popen([
     "--output", "/dev/video10"
 ])
 
-time.sleep(1)
+time.sleep(5)
 
 # Start camera
 cap = cv2.VideoCapture(10)
