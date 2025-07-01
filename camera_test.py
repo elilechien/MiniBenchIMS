@@ -48,7 +48,9 @@ try:
             "-o", filename
         ])
 
+        time.sleep(.2)
         print(f"Saved {filename}")
+
         img = Image.open(filename)
         results = decode(img)
 
