@@ -38,7 +38,7 @@ try:
     while True:
         # Generate timestamped filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"frame_{timestamp}.jpg"
+        filename = f"frame.jpg"
 
         # Capture using libcamera-still
         subprocess.run([
