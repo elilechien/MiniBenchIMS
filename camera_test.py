@@ -46,6 +46,7 @@ time.sleep(3)
 
 cap = cv2.VideoCapture("/dev/video10")
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
 print("Resolution:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 if not cap.isOpened():
@@ -87,6 +88,7 @@ try:
                     print("DIGIKEY DATAMATRIX DETECTED:")
                     print(parsed)
 
+        cv2.imshow("Live Feed", resized)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
