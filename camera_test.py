@@ -42,7 +42,7 @@ try:
         filename = f"frame.jpg"
 
         # Capture image
-        subprocess.run(["libcamera-still", "-t", "100", "-n", "-o", filename], check=True)
+        subprocess.run(["libcamera-still", "-t", "5", "-n", "-o", filename], check=True)
 
         # Wait until the file is fully written
         time.sleep(2)
