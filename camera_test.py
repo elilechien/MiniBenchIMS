@@ -36,7 +36,6 @@ cam_stream = subprocess.Popen([
     "libcamera-vid",
     "-t", "0",
     "--framerate", "5",
-    "--codec", "yuv420",
     "--output", "/dev/video10"
 ])
 
@@ -44,7 +43,6 @@ time.sleep(3)
 
 cap = cv2.VideoCapture("/dev/video10")
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
 print("Resolution:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 if not cap.isOpened():
@@ -62,6 +60,7 @@ try:
             time.sleep(1)
             continue
 
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         resized = cv2.resize(gray, (640, 480))
         pil_img = Image.fromarray(resized)
@@ -98,3 +97,4 @@ finally:
     cam_stream.terminate()
     cv2.destroyAllWindows()
     executor.shutdown()
+
