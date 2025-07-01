@@ -35,7 +35,10 @@ def try_decode(pil_img):
 cam_stream = subprocess.Popen([
     "libcamera-vid",
     "-t", "0",
+    "--width", "640",
+    "--height", "480",
     "--framerate", "5",
+    "--codec", "mjpeg",           # MJPEG is widely compatible
     "--output", "/dev/video10"
 ])
 
