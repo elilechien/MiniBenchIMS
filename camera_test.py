@@ -57,11 +57,10 @@ try:
 
         # Convert to grayscale and downsize
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        resized = cv2.resize(gray, (320, 240))
 
         # Decode and time it
         start = time.time()
-        results = decode(resized)
+        results = decode(gray)
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
 
