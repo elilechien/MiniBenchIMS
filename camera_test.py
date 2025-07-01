@@ -75,11 +75,9 @@ try:
                 print("Data Matrix found, but not parsed properly.")
         elif len(results) > 1:
             print("Multiple codes detected.")
-        else:
-            print("No Data Matrix found.")
 
         cv2.imshow("Live Feed", frame)
-
+        time.sleep(.5)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
