@@ -42,10 +42,10 @@ try:
         filename = f"frame.jpg"
 
         # Capture image
-        subprocess.run(["libcamera-still", "-t", "1", "-n", "-o", filename], check=True)
+        subprocess.run(["libcamera-still", "-t", "100", "-n", "-o", filename], check=True)
 
         # Wait until the file is fully written
-        time.sleep(10)
+        time.sleep(2)
         img_path = Path(filename)   
 
         if img_path.exists() and img_path.stat().st_size > 0:
