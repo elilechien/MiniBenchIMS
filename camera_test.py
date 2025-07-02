@@ -69,6 +69,10 @@ def decode_with_region_detection(image_path, padding=5):
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
             aspect = w / float(h)
+            region = gray[y:y+h, x:x+w]
+            if np.std(region) < 20:  # adjust threshold as needed
+                continue  # skip low-contrast blobs
+
             if 60 < w < 400 and 0.85 < aspect < 1.15:
                 area = cv2.contourArea(cnt)
                 if area < 1000:
