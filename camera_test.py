@@ -48,7 +48,7 @@ def preprocess_for_detection(image):
     # Crop out outer sixths
     x1 = w // 6
     x2 = w - w // 6
-    cropped = image[:, x1:x2]
+    cropped = image[x1:x2, :]
 
     return cropped, x1  # return offset so coordinates can be mapped back if needed
 
