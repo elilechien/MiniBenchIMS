@@ -40,7 +40,6 @@ cam_stream = subprocess.Popen([
     "--width", "800",
     "--height", "600",
     "--framerate", "10",
-    "--codec", "mjpeg",
     "--shutter", "20000",  # Longer exposure for brighter image (20ms)
     "--gain", "4.0",       # Higher gain for more brightness
     "--awb", "auto",
@@ -57,7 +56,6 @@ time.sleep(5)  # Give more time for camera to start and focus
 cap = cv2.VideoCapture("/dev/video10")
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 cap.set(cv2.CAP_PROP_FPS, 10)
-cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
 
 if not cap.isOpened():
     print("Failed to open camera.")
@@ -111,18 +109,16 @@ try:
             # Process the fresh frame at full resolution
             gray = cv2.cvtColor(fresh_frame, cv2.COLOR_BGR2GRAY)
             
-            # Apply sharpening
-            enhanced = quick_sharpen(gray)
+            # Use raw image - no enhancement needed with good camera settings
             
             # Save debug images
             debug_original = save_debug_frame(gray, "_original")
-            debug_enhanced = save_debug_frame(enhanced, "_enhanced")
             
-            print(f"Processing {enhanced.shape[1]}x{enhanced.shape[0]} image at full resolution...")
+            print(f"Processing {gray.shape[1]}x{gray.shape[0]} raw image...")
             
-            # Decode at full resolution
+            # Decode at full resolution using raw image
             decode_start = time.time()
-            dmtx_results = dmtx_decode(enhanced, timeout=2000)
+            dmtx_results = dmtx_decode(gray, timeout=2000)
             decode_time = time.time() - decode_start
             
             if dmtx_results:
