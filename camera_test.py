@@ -127,61 +127,40 @@ try:
             print("Decoding Data Matrix...")
             decode_start = time.time()
             
-            # Try different sizes for best chance of detection
-            sizes_to_try = [
-                ("full", enhanced),
-                ("75%", cv2.resize(enhanced, None, fx=0.75, fy=0.75)),
-                ("50%", cv2.resize(enhanced, None, fx=0.5, fy=0.5))
-            ]
+            # Use 50% size for speed
+            small_enhanced = cv2.resize(enhanced, None, fx=0.5, fy=0.5)
+            print(f"  Processing at 50% size ({small_enhanced.shape[1]}x{small_enhanced.shape[0]})...")
             
-            found_result = False
+            dmtx_results = dmtx_decode(small_enhanced, timeout=2000)  # 2 second timeout
             
-            for size_name, img in sizes_to_try:
-                if found_result:
-                    break
-                    
-                print(f"  Trying {size_name} size ({img.shape[1]}x{img.shape[0]})...")
-                size_start = time.time()
-                
-                dmtx_results = dmtx_decode(img, timeout=2000)  # 2 second timeout
-                
-                size_time = time.time() - size_start
-                print(f"    {size_name}: {size_time:.3f}s")
-                
-                if dmtx_results:
-                    for result in dmtx_results:
-                        try:
-                            raw = result.data.decode("utf-8")
-                            
-                            total_time = time.time() - decode_start + capture_time
-                            print(f"\n{'='*50}")
-                            print(f"✓ DATA MATRIX FOUND! (Total: {total_time:.3f}s)")
-                            print(f"Size: {size_name}")
-                            print(f"Raw: {repr(raw)}")
-                            
-                            parsed = parse_digikey_data_matrix(raw)
-                            if "digi_key_pn" in parsed:
-                                print(f"✓ DIGIKEY PART DETECTED:")
-                                for key, value in parsed.items():
-                                    print(f"  {key}: {value}")
-                            else:
-                                print(f"✗ Unknown format")
-                                print(f"Parsed: {parsed}")
-                            
-                            print(f"{'='*50}\n")
-                            found_result = True
-                            break
-                            
-                        except UnicodeDecodeError:
-                            print(f"    Unicode decode error")
-                            continue
-                
-                # If found result, break out of size loop
-                if found_result:
-                    break
+            decode_time = time.time() - decode_start
+            total_time = decode_time + capture_time
             
-            if not found_result:
-                total_time = time.time() - decode_start + capture_time
+            if dmtx_results:
+                for result in dmtx_results:
+                    try:
+                        raw = result.data.decode("utf-8")
+                        
+                        print(f"\n{'='*50}")
+                        print(f"✓ DATA MATRIX FOUND! (Total: {total_time:.3f}s)")
+                        print(f"Raw: {repr(raw)}")
+                        
+                        parsed = parse_digikey_data_matrix(raw)
+                        if "digi_key_pn" in parsed:
+                            print(f"✓ DIGIKEY PART DETECTED:")
+                            for key, value in parsed.items():
+                                print(f"  {key}: {value}")
+                        else:
+                            print(f"✗ Unknown format")
+                            print(f"Parsed: {parsed}")
+                        
+                        print(f"{'='*50}\n")
+                        break
+                        
+                    except UnicodeDecodeError:
+                        print(f"Unicode decode error")
+                        continue
+            else:
                 print(f"✗ No Data Matrix detected ({total_time:.3f}s)")
             
             last_scan_time = time.time()
