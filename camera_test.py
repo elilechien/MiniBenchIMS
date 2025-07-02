@@ -1,6 +1,7 @@
 import subprocess
 import os
 import re
+from PIL import Image
 
 def parse_digikey_data_matrix(raw: str):
     if raw.startswith("[)>06"):
@@ -22,7 +23,7 @@ def parse_digikey_data_matrix(raw: str):
             result["mid"] = field[3:]
     return result
 
-def capture_image(filename="/tmp/frame.jpg"):
+def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
     try:
         subprocess.run([
             "libcamera-still",
@@ -33,7 +34,14 @@ def capture_image(filename="/tmp/frame.jpg"):
             "--autofocus-mode", "auto",
             "--lens-position", "0.0"
         ], check=True)
-        return filename if os.path.exists(filename) else None
+
+        if os.path.exists(filename):
+            # Convert to grayscale and resize to speed up decoding
+            img = Image.open(filename).convert("L")
+            img = img.resize((480, 360))
+            img.save(resized)
+            return resized
+        return None
     except subprocess.CalledProcessError as e:
         print(f"✗ Camera capture failed: {e}")
         return None
@@ -64,7 +72,7 @@ def main():
                 print("✗ Image capture failed.\n")
                 continue
 
-            print("✓ Captured image, running dmtxread...")
+            print("✓ Captured and resized image, running dmtxread...")
             raw = decode_with_dmtx(img_path)
             if not raw:
                 print("✗ No valid Data Matrix detected.\n")
