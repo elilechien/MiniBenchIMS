@@ -55,7 +55,11 @@ def decode_with_region_detection(image_path):
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
             aspect = w / float(h)
-            if 20 < w < 300 and 0.85 < aspect < 1.15:
+            if 60 < w < 400 and 0.85 < aspect < 1.15:
+                area = cv2.contourArea(cnt)
+                if area < 1000:
+                    continue
+
                 region = gray[y:y+h, x:x+w]
                 candidates.append(region)
 
