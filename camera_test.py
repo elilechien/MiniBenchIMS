@@ -44,13 +44,10 @@ def capture_image(filename="/tmp/frame.jpg"):
 
 def preprocess_for_detection(image):
     h, w = image.shape[:2]
-    
-    # Crop out outer sixths
     x1 = w // 6
     x2 = w - w // 6
-    cropped = image[x1:x2, :]
-
-    return cropped, x1  # return offset so coordinates can be mapped back if needed
+    cropped = image[:, x1:x2]  # crop columns (left/right sixths)
+    return cropped, x1  # offset x for re-mapping
 
 def decode_with_region_detection(image_path, padding=5):
     try:
@@ -70,7 +67,7 @@ def decode_with_region_detection(image_path, padding=5):
             x, y, w, h = cv2.boundingRect(cnt)
             aspect = w / float(h)
             region = gray[y:y+h, x:x+w]
-            if np.std(region) < 20:  # adjust threshold as needed
+            if np.std(region) < 15:
                 continue  # skip low-contrast blobs
 
             if 60 < w < 400 and 0.85 < aspect < 1.15:
@@ -78,7 +75,6 @@ def decode_with_region_detection(image_path, padding=5):
                 if area < 1000:
                     continue
 
-                # Add padding (with clipping to image boundaries)
                 x1 = max(x - padding, 0)
                 y1 = max(y - padding, 0)
                 x2 = min(x + w + padding, gray.shape[1])
@@ -87,9 +83,12 @@ def decode_with_region_detection(image_path, padding=5):
 
                 candidates.append(region)
 
-                # 🟩 Draw rectangle on original image
-                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                print(f"→ Candidate at (x={x}, y={y}, w={w}, h={h})")
+                # Draw on full image with x-offset correction
+                cv2.rectangle(image,
+                              (x1 + offset_x, y1),
+                              (x2 + offset_x, y2),
+                              (0, 255, 0), 2)
+                print(f"→ Candidate at (x={x + offset_x}, y={y}, w={w}, h={h})")
 
         cv2.imwrite("/tmp/debug_regions.jpg", image)
 
