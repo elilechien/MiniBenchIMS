@@ -45,19 +45,17 @@ def capture_image(filename="/tmp/frame.jpg"):
 
 def preprocess_for_detection(image):
     h, w = image.shape[:2]
-    x1 = w // 6
-    x2 = w - w // 6
+    # Only crop vertical thirds
     y1 = h // 3
     y2 = h - h // 3
-    cropped = image[y1:y2, x1:x2]
-    return cropped, x1, y1
+    cropped = image[y1:y2, :]
+    return cropped, 0, y1
 
 def decode_with_region_detection(image_path):
     try:
         image = cv2.imread(image_path)
         cropped_image, offset_x, offset_y = preprocess_for_detection(image)
         gray = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2GRAY)
-        gray = cv2.resize(gray, (int(gray.shape[1] * 0.8), int(gray.shape[0] * 0.8)))
 
         thresh = cv2.adaptiveThreshold(
             gray, 255,
@@ -75,9 +73,9 @@ def decode_with_region_detection(image_path):
             if np.std(region) < 15:
                 continue
 
-            if 60 < w < 400 and 0.85 < aspect < 1.15:
+            if 50 < w < 600 and 0.6 < aspect < 1.4:
                 area = cv2.contourArea(cnt)
-                if area < 1000:
+                if area < 800:
                     continue
 
                 pad_x = int(w * 0.08)
@@ -89,6 +87,7 @@ def decode_with_region_detection(image_path):
                 region = gray[y1:y2, x1:x2]
                 candidates.append(region)
 
+                # Draw rectangle in full image coordinates
                 rx1 = int((x1 / gray.shape[1]) * cropped_image.shape[1]) + offset_x
                 ry1 = int((y1 / gray.shape[0]) * cropped_image.shape[0]) + offset_y
                 rx2 = int((x2 / gray.shape[1]) * cropped_image.shape[1]) + offset_x
@@ -129,10 +128,15 @@ def main():
             raw = decode_with_region_detection(img_path)
             t3 = time.time()
 
-            img = cv2.imread(img_path)
-            print("Trying raw decode")
-            result = decode(img)
-            print(result[0].data.decode()) if result else print("No decode")    
+            # Full frame fallback decode (grayscale PIL)
+            print("Trying full-frame fallback decode...")
+            try:
+                full_pil = Image.open(img_path).convert("L")
+                result = decode(full_pil)
+                if result:
+                    print("→ Full-frame fallback:", result[0].data.decode())
+            except:
+                print("✗ Full-frame decode failed.")
 
             if not raw:
                 print("✗ No valid Data Matrix detected.\n")
