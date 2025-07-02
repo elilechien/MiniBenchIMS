@@ -2,6 +2,7 @@ import cv2
 import re
 import subprocess
 import time
+from pyzbar.pyzbar import decode
 from datetime import datetime
 
 def parse_digikey_data_matrix(raw: str):
@@ -23,9 +24,6 @@ def parse_digikey_data_matrix(raw: str):
         elif field.startswith("12Z"):
             result["mid"] = field[3:]
     return result
-
-# Initialize the barcode detector
-detector = cv2.barcode.BarcodeDetector()
 
 # Start libcamera-vid to stream to v4l2loopback
 cam_stream = subprocess.Popen([
@@ -61,37 +59,35 @@ try:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         start = time.time()
-        result = detector.detectAndDecode(gray)
+        results = decode(gray)
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
         
-        # Handle different OpenCV versions
-        if len(result) == 3:
-            retval, decoded_info, points = result
-            decoded_type = None
-        elif len(result) == 4:
-            retval, decoded_info, decoded_type, points = result
-        else:
-            retval = False
-            decoded_info = []
-            points = None
-        
-        if retval and decoded_info is not None:
-            for i, raw in enumerate(decoded_info):
-                if raw:  # Make sure the decoded string is not empty
-                    print(f"Raw: {repr(raw)}")
-                    parsed = parse_digikey_data_matrix(raw)
-                    if "digi_key_pn" in parsed:
-                        print("DIGIKEY DATAMATRIX DETECTED:")
-                        print(parsed)
-                    
-                    # Optional: Draw bounding box around detected barcode
-                    if points is not None and len(points) > i:
-                        pts = points[i].astype(int)
-                        cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
-        
-        # Optional: Display the frame with detected barcodes highlighted
-        # cv2.imshow('Barcode Scanner', frame)
+        if results:
+            for result in results:
+                raw = result.data.decode("utf-8")
+                print(f"\n=== BARCODE DETECTED ===")
+                print(f"Type: {result.type}")
+                print(f"Raw data: {repr(raw)}")
+                print(f"Raw bytes: {result.data}")
+                
+                # Show each character with its hex value for debugging
+                print("Character breakdown:")
+                for i, char in enumerate(raw):
+                    print(f"  [{i:2d}]: '{char}' (0x{ord(char):02x})")
+                
+                parsed = parse_digikey_data_matrix(raw)
+                print(f"Parsed fields: {parsed}")
+                
+                if "digi_key_pn" in parsed:
+                    print("✓ DIGIKEY DATAMATRIX DETECTED:")
+                    print(parsed)
+                else:
+                    print("✗ Not recognized as Digikey format")
+                print("=" * 30)
+                
+                # Add delay to avoid spam
+                time.sleep(2)
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
