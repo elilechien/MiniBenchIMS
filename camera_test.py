@@ -129,6 +129,11 @@ def main():
             raw = decode_with_region_detection(img_path)
             t3 = time.time()
 
+            img = cv2.imread(img_path)
+            print("Trying raw decode")
+            result = decode(img)
+            print(result[0].data.decode()) if result else print("No decode")    
+
             if not raw:
                 print("✗ No valid Data Matrix detected.\n")
                 print("📸 Debug saved to /tmp/debug_regions.jpg\n")
