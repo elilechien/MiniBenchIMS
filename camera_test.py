@@ -1,6 +1,8 @@
 import subprocess
 import os
 import re
+import cv2
+import numpy as np
 from PIL import Image
 from pylibdmtx.pylibdmtx import decode
 
@@ -24,7 +26,7 @@ def parse_digikey_data_matrix(raw: str):
             result["mid"] = field[3:]
     return result
 
-def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
+def capture_image(filename="/tmp/frame.jpg"):
     try:
         subprocess.run([
             "libcamera-still",
@@ -37,24 +39,38 @@ def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
         ], check=True)
 
         if os.path.exists(filename):
-            img = Image.open(filename).convert("L")
-            #img.thumbnail((480, 360))  # preserve aspect ratio
-            img.save(resized) 
-            return resized
+            return filename
         return None
     except subprocess.CalledProcessError as e:
         print(f"✗ Camera capture failed: {e}")
         return None
 
-def decode_with_dmtx(image_path):
+def decode_with_region_detection(image_path):
     try:
-        img = Image.open(image_path).convert("L")
-        results = decode(img)
-        if results:
-            return results[0].data.decode("utf-8")
+        image = cv2.imread(image_path)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                       cv2.THRESH_BINARY_INV, 11, 2)
+
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        candidates = []
+
+        for cnt in contours:
+            x, y, w, h = cv2.boundingRect(cnt)
+            aspect = w / float(h)
+            if 20 < w < 300 and 0.85 < aspect < 1.15:
+                region = gray[y:y+h, x:x+w]
+                candidates.append(region)
+
+        for region in candidates:
+            pil_img = Image.fromarray(region).convert("L")
+            results = decode(pil_img)
+            if results:
+                return results[0].data.decode("utf-8")
+
         return None
     except Exception as e:
-        print(f"✗ pylibdmtx decode error: {e}")
+        print(f"✗ Region-based decode error: {e}")
         return None
 
 def main():
@@ -68,8 +84,8 @@ def main():
                 print("✗ Image capture failed.\n")
                 continue
 
-            print("✓ Captured and resized image, decoding...")
-            raw = decode_with_dmtx(img_path)
+            print("✓ Captured image, scanning for matrix candidates...")
+            raw = decode_with_region_detection(img_path)
             if not raw:
                 print("✗ No valid Data Matrix detected.\n")
                 continue
@@ -80,7 +96,6 @@ def main():
                 print("✓ Parsed Digi-Key Info:")
                 for k, v in parsed.items():
                     print(f"  {k}: {v}")
-                # os.system("aplay /usr/share/sounds/alsa/Front_Center.wav")  # Optional: Success sound
             else:
                 print("✗ Data does not match Digi-Key format.\n")
         except KeyboardInterrupt:
