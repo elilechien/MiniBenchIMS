@@ -1,9 +1,6 @@
 import subprocess
-import cv2
 import os
-import time
 import re
-import uuid
 
 def parse_digikey_data_matrix(raw: str):
     if raw.startswith("[)>06"):
@@ -37,35 +34,13 @@ def capture_image(filename="/tmp/frame.jpg"):
     ])
     return filename if os.path.exists(filename) else None
 
-def find_candidates(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                   cv2.THRESH_BINARY_INV, 11, 2)
-
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
-    candidates = []
-
-    for i in range(1, num_labels):  # skip background
-        x, y, w, h, area = stats[i]
-        aspect = w / h
-        if 20 < w < 400 and 0.8 < aspect < 1.2:  # roughly square
-            region = image[y:y+h, x:x+w]
-            candidates.append((region, (x, y, w, h)))
-            cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
-
-    cv2.imwrite("/tmp/debug_bboxes.jpg", image)
-    return candidates
-
-def decode_with_dmtx(region_image):
-    temp_path = f"/tmp/crop_{uuid.uuid4().hex}.jpg"
-    cv2.imwrite(temp_path, region_image)
+def decode_with_dmtx(image_path):
     try:
-        output = subprocess.check_output(["dmtxread", temp_path], stderr=subprocess.DEVNULL, timeout=1)
-        os.remove(temp_path)
+        output = subprocess.check_output(["dmtxread", image_path], stderr=subprocess.DEVNULL, timeout=2)
         return output.decode("utf-8").strip()
-    except subprocess.TimeoutExpired:
-        return None
     except subprocess.CalledProcessError:
+        return None
+    except subprocess.TimeoutExpired:
         return None
 
 def main():
@@ -78,28 +53,20 @@ def main():
             print("✗ Image capture failed.")
             continue
 
-        image = cv2.imread(img_path)
-        candidates = find_candidates(image)
-        print(f"Found {len(candidates)} candidate region(s).")
+        print("✓ Captured image, running dmtxread...")
+        raw = decode_with_dmtx(img_path)
+        if not raw:
+            print("✗ No Data Matrix found.\n")
+            continue
 
-        found = False
-        for i, (region, (x, y, w, h)) in enumerate(candidates):
-            raw = decode_with_dmtx(region)
-            if not raw:
-                continue
-            print(f"\n✓ Data Matrix Found: {repr(raw)}")
-            parsed = parse_digikey_data_matrix(raw)
-            if parsed:
-                print("✓ Parsed Digi-Key Info:")
-                for k, v in parsed.items():
-                    print(f"  {k}: {v}")
-            else:
-                print("✗ Not a Digi-Key format.")
-            found = True
-            break
-
-        if not found:
-            print("✗ No valid Data Matrix detected.\n")
+        print(f"\n✓ Data Matrix Found: {repr(raw)}")
+        parsed = parse_digikey_data_matrix(raw)
+        if parsed:
+            print("✓ Parsed Digi-Key Info:")
+            for k, v in parsed.items():
+                print(f"  {k}: {v}")
+        else:
+            print("✗ Not a Digi-Key format.\n")
 
 if __name__ == "__main__":
     main()
