@@ -26,35 +26,58 @@ def parse_digikey_data_matrix(raw: str):
             result["mid"] = field[3:]
     return result
 
-# Start libcamera-vid to stream to v4l2loopback
-cam_stream = subprocess.Popen([
-    "libcamera-vid",
-    "-t", "0",
-    "--width", "640",
-    "--height", "480",
-    "--framerate", "5",
-    "--codec", "mjpeg",
-    "--output", "/dev/video10"
-])
+# Alternative: Use libcamera-still for single frame capture instead of video stream
+# This eliminates the v4l2loopback delay entirely
+def capture_single_frame():
+    """Capture a single frame directly from libcamera"""
+    result = subprocess.run([
+        "libcamera-still",
+        "--immediate",  # No preview delay
+        "--width", "640",
+        "--height", "480",
+        "--encoding", "jpg",
+        "--quality", "80",
+        "--output", "/tmp/capture.jpg"
+    ], capture_output=True)
+    
+    if result.returncode == 0:
+        frame = cv2.imread("/tmp/capture.jpg")
+        return True, frame
+    else:
+        return False, None
 
-time.sleep(3)
+# Comment out the video stream approach and use direct capture
+# cam_stream = subprocess.Popen([
+#     "libcamera-vid",
+#     "-t", "0",
+#     "--width", "640",
+#     "--height", "480",
+#     "--framerate", "5",
+#     "--codec", "mjpeg",
+#     "--output", "/dev/video10"
+# ])
+# 
+# time.sleep(3)
+# 
+# cap = cv2.VideoCapture("/dev/video10")
+# cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce to 1 frame buffer
+# cap.set(cv2.CAP_PROP_FPS, 5)  # Match the libcamera framerate
+# # Force immediate frame updates
+# cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
 
-cap = cv2.VideoCapture("/dev/video10")
-cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce to 1 frame buffer
-cap.set(cv2.CAP_PROP_FPS, 5)  # Match the libcamera framerate
+print("Using direct libcamera-still capture for zero-delay frames")
 
-print("Resolution:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-if not cap.isOpened():
-    print("Failed to open camera.")
-    exit()
+# if not cap.isOpened():
+#     print("Failed to open camera.")
+#     exit()
 
 try:
     while True:
-        ret, frame = cap.read()
+        # Capture fresh frame directly from camera
+        ret, frame = capture_single_frame()
         if not ret:
             print("Frame capture failed.")
-            time.sleep(1)
+            time.sleep(0.5)
             continue
         
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
@@ -109,6 +132,6 @@ try:
 except KeyboardInterrupt:
     print("Stopped by user.")
 finally:
-    cap.release()
-    cam_stream.terminate()
+    # cap.release()
+    # cam_stream.terminate()
     cv2.destroyAllWindows()
