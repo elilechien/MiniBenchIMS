@@ -38,7 +38,7 @@ def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
         if os.path.exists(filename):
             # Convert to grayscale and resize to speed up decoding
             img = Image.open(filename).convert("L")
-            img = img.resize((480, 360))
+            img.thumbnail((480, 360))
             img.save(resized)
             return resized
         return None
