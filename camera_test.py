@@ -41,8 +41,8 @@ cam_stream = subprocess.Popen([
     "--height", "600",
     "--framerate", "10",
     "--codec", "mjpeg",
-    "--shutter", "4000",  # Fast shutter to reduce blur
-    "--gain", "1.5",
+    "--shutter", "20000",  # Longer exposure for brighter image (20ms)
+    "--gain", "4.0",       # Higher gain for more brightness
     "--awb", "auto",
     "--autofocus-mode", "continuous",  # Continuous autofocus
     "--lens-position", "0.0",  # Let autofocus work
