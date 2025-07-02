@@ -61,9 +61,20 @@ try:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         start = time.time()
-        retval, decoded_info, decoded_type, points = detector.detectAndDecode(gray)
+        result = detector.detectAndDecode(gray)
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
+        
+        # Handle different OpenCV versions
+        if len(result) == 3:
+            retval, decoded_info, points = result
+            decoded_type = None
+        elif len(result) == 4:
+            retval, decoded_info, decoded_type, points = result
+        else:
+            retval = False
+            decoded_info = []
+            points = None
         
         if retval:
             for i, raw in enumerate(decoded_info):
