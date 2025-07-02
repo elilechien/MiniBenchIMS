@@ -1,6 +1,7 @@
 import subprocess
 import os
 import re
+import time
 import cv2
 import numpy as np
 from PIL import Image
@@ -46,14 +47,18 @@ def preprocess_for_detection(image):
     h, w = image.shape[:2]
     x1 = w // 6
     x2 = w - w // 6
-    cropped = image[:, x1:x2]  # crop columns (left/right sixths)
-    return cropped, x1  # offset x for re-mapping
+    y1 = h // 3
+    y2 = h - h // 3
+    cropped = image[y1:y2, x1:x2]
+    return cropped, x1, y1
 
-def decode_with_region_detection(image_path, padding=5):
+def decode_with_region_detection(image_path):
     try:
         image = cv2.imread(image_path)
-        cropped_image, offset_x = preprocess_for_detection(image)
+        cropped_image, offset_x, offset_y = preprocess_for_detection(image)
         gray = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, (int(gray.shape[1] * 0.8), int(gray.shape[0] * 0.8)))
+
         thresh = cv2.adaptiveThreshold(
             gray, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -68,27 +73,28 @@ def decode_with_region_detection(image_path, padding=5):
             aspect = w / float(h)
             region = gray[y:y+h, x:x+w]
             if np.std(region) < 15:
-                continue  # skip low-contrast blobs
+                continue
 
             if 60 < w < 400 and 0.85 < aspect < 1.15:
                 area = cv2.contourArea(cnt)
                 if area < 1000:
                     continue
 
-                x1 = max(x - padding, 0)
-                y1 = max(y - padding, 0)
-                x2 = min(x + w + padding, gray.shape[1])
-                y2 = min(y + h + padding, gray.shape[0])
+                pad_x = int(w * 0.08)
+                pad_y = int(h * 0.08)
+                x1 = max(x - pad_x, 0)
+                y1 = max(y - pad_y, 0)
+                x2 = min(x + w + pad_x, gray.shape[1])
+                y2 = min(y + h + pad_y, gray.shape[0])
                 region = gray[y1:y2, x1:x2]
-
                 candidates.append(region)
 
-                # Draw on full image with x-offset correction
-                cv2.rectangle(image,
-                              (x1 + offset_x, y1),
-                              (x2 + offset_x, y2),
-                              (0, 255, 0), 2)
-                print(f"→ Candidate at (x={x + offset_x}, y={y}, w={w}, h={h})")
+                rx1 = int((x1 / gray.shape[1]) * cropped_image.shape[1]) + offset_x
+                ry1 = int((y1 / gray.shape[0]) * cropped_image.shape[0]) + offset_y
+                rx2 = int((x2 / gray.shape[1]) * cropped_image.shape[1]) + offset_x
+                ry2 = int((y2 / gray.shape[0]) * cropped_image.shape[0]) + offset_y
+                cv2.rectangle(image, (rx1, ry1), (rx2, ry2), (0, 255, 0), 2)
+                print(f"→ Candidate at full (x={rx1}, y={ry1}, w={rx2 - rx1}, h={ry2 - ry1})")
 
         cv2.imwrite("/tmp/debug_regions.jpg", image)
 
@@ -109,26 +115,38 @@ def main():
     while True:
         try:
             input("➤ Press Enter to scan...")
+            t0 = time.time()
+
+            t1 = time.time()
             img_path = capture_image()
+            t2 = time.time()
+
             if not img_path:
                 print("✗ Image capture failed.\n")
                 continue
 
             print("✓ Captured image, detecting candidates...")
             raw = decode_with_region_detection(img_path)
+            t3 = time.time()
+
             if not raw:
                 print("✗ No valid Data Matrix detected.\n")
                 print("📸 Debug saved to /tmp/debug_regions.jpg\n")
-                continue
-
-            print(f"\n✓ Data Matrix Found:\n  {repr(raw)}")
-            parsed = parse_digikey_data_matrix(raw)
-            if parsed:
-                print("✓ Parsed Digi-Key Info:")
-                for k, v in parsed.items():
-                    print(f"  {k}: {v}")
             else:
-                print("✗ Data does not match Digi-Key format.\n")
+                print(f"\n✓ Data Matrix Found:\n  {repr(raw)}")
+                parsed = parse_digikey_data_matrix(raw)
+                if parsed:
+                    print("✓ Parsed Digi-Key Info:")
+                    for k, v in parsed.items():
+                        print(f"  {k}: {v}")
+                else:
+                    print("✗ Data does not match Digi-Key format.\n")
+
+            print(f"\n⏱️ Timing:")
+            print(f"  Capture time: {(t2 - t1):.2f} sec")
+            print(f"  Decode time:  {(t3 - t2):.2f} sec")
+            print(f"  Total time:   {(t3 - t0):.2f} sec\n")
+
         except KeyboardInterrupt:
             print("\nExiting.")
             break
