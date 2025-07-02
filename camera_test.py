@@ -95,8 +95,21 @@ try:
         if current_time - last_scan_time >= 2.5:
             print(f"Auto-scanning frame #{frame_count}...")
             
-            # Process the current frame at full resolution
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Flush buffer to get the latest frame
+            print("Flushing camera buffer...")
+            for _ in range(5):  # Read and discard several frames
+                ret, _ = cap.read()
+                if not ret:
+                    break
+            
+            # Now get the fresh frame
+            ret, fresh_frame = cap.read()
+            if not ret:
+                print("Failed to get fresh frame")
+                continue
+            
+            # Process the fresh frame at full resolution
+            gray = cv2.cvtColor(fresh_frame, cv2.COLOR_BGR2GRAY)
             
             # Apply sharpening
             enhanced = quick_sharpen(gray)
