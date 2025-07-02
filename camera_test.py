@@ -50,10 +50,7 @@ def preprocess_for_detection(image):
     x2 = w - w // 6
     cropped = image[:, x1:x2]
 
-    # Resize to 50% (thumbnail effect)
-    resized = cv2.resize(cropped, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
-
-    return resized, x1  # return offset so coordinates can be mapped back if needed
+    return cropped, x1  # return offset so coordinates can be mapped back if needed
 
 def decode_with_region_detection(image_path, padding=5):
     try:
