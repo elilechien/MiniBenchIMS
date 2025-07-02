@@ -66,7 +66,7 @@ def decode_with_region_detection(image_path):
 
             if 50 < w < 600 and 0.6 < aspect < 1.4:
                 area = cv2.contourArea(cnt)
-                if area < 800:
+                if area < (200 * 200):
                     continue
 
                 pad_x = int(w * 0.08)
