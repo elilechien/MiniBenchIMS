@@ -37,10 +37,7 @@ def capture_image(filename="/tmp/frame.jpg"):
             "--autofocus-mode", "auto",
             "--lens-position", "0.0"
         ], check=True)
-
-        if os.path.exists(filename):
-            return filename
-        return None
+        return filename if os.path.exists(filename) else None
     except subprocess.CalledProcessError as e:
         print(f"✗ Camera capture failed: {e}")
         return None
@@ -62,11 +59,21 @@ def decode_with_region_detection(image_path):
                 region = gray[y:y+h, x:x+w]
                 candidates.append(region)
 
+                # 🟩 Draw rectangle on original image
+                cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+                # 📢 Print box details
+                print(f"→ Candidate at (x={x}, y={y}, w={w}, h={h})")
+
+        # 💾 Save debug image
+        cv2.imwrite("/tmp/debug_regions.jpg", image)
+
+        # 🧠 Try decoding each candidate region
         for region in candidates:
             pil_img = Image.fromarray(region).convert("L")
-            results = decode(pil_img)
-            if results:
-                return results[0].data.decode("utf-8")
+            result = decode(pil_img)
+            if result:
+                return result[0].data.decode("utf-8")
 
         return None
     except Exception as e:
@@ -84,10 +91,11 @@ def main():
                 print("✗ Image capture failed.\n")
                 continue
 
-            print("✓ Captured image, scanning for matrix candidates...")
+            print("✓ Captured image, detecting candidates...")
             raw = decode_with_region_detection(img_path)
             if not raw:
                 print("✗ No valid Data Matrix detected.\n")
+                print("📸 Debug saved to /tmp/debug_regions.jpg\n")
                 continue
 
             print(f"\n✓ Data Matrix Found:\n  {repr(raw)}")
