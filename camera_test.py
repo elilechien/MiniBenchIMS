@@ -43,19 +43,10 @@ def capture_image(filename="/tmp/frame.jpg"):
         print(f"✗ Camera capture failed: {e}")
         return None
 
-def preprocess_for_detection(image):
-    h, w = image.shape[:2]
-    # Only crop vertical thirds
-    y1 = h // 3
-    y2 = h - h // 3
-    cropped = image[y1:y2, :]
-    return cropped, 0, y1
-
 def decode_with_region_detection(image_path):
     try:
         image = cv2.imread(image_path)
-        cropped_image, offset_x, offset_y = preprocess_for_detection(image)
-        gray = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         thresh = cv2.adaptiveThreshold(
             gray, 255,
@@ -87,13 +78,9 @@ def decode_with_region_detection(image_path):
                 region = gray[y1:y2, x1:x2]
                 candidates.append(region)
 
-                # Draw rectangle in full image coordinates
-                rx1 = int((x1 / gray.shape[1]) * cropped_image.shape[1]) + offset_x
-                ry1 = int((y1 / gray.shape[0]) * cropped_image.shape[0]) + offset_y
-                rx2 = int((x2 / gray.shape[1]) * cropped_image.shape[1]) + offset_x
-                ry2 = int((y2 / gray.shape[0]) * cropped_image.shape[0]) + offset_y
-                cv2.rectangle(image, (rx1, ry1), (rx2, ry2), (0, 255, 0), 2)
-                print(f"→ Candidate at full (x={rx1}, y={ry1}, w={rx2 - rx1}, h={ry2 - ry1})")
+                # Draw rectangle on original image
+                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                print(f"→ Candidate at (x={x1}, y={y1}, w={x2 - x1}, h={y2 - y1})")
 
         cv2.imwrite("/tmp/debug_regions.jpg", image)
 
