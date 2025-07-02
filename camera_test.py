@@ -42,10 +42,24 @@ def capture_image(filename="/tmp/frame.jpg"):
         print(f"✗ Camera capture failed: {e}")
         return None
 
+def preprocess_for_detection(image):
+    h, w = image.shape[:2]
+    
+    # Crop out outer sixths
+    x1 = w // 6
+    x2 = w - w // 6
+    cropped = image[:, x1:x2]
+
+    # Resize to 50% (thumbnail effect)
+    resized = cv2.resize(cropped, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+
+    return resized, x1  # return offset so coordinates can be mapped back if needed
+
 def decode_with_region_detection(image_path, padding=5):
     try:
         image = cv2.imread(image_path)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cropped_image, offset_x = preprocess_for_detection(image)
+        gray = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2GRAY)
         thresh = cv2.adaptiveThreshold(
             gray, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
