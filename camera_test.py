@@ -75,8 +75,7 @@ frame_count = 0
 
 def save_debug_frame(frame, filename_suffix=""):
     """Save frame for debugging"""
-    timestamp = int(time.time())
-    filename = f"/tmp/debug_frame{filename_suffix}_{timestamp}.jpg"
+    filename = f"/tmp/debug_frame{filename_suffix}.jpg"
     cv2.imwrite(filename, frame)
     print(f"Debug frame saved: {filename}")
     return filename
