@@ -52,7 +52,8 @@ if not cap.isOpened():
 try:
     while True:
         # Flush the buffer to get the most recent frame
-        for _ in range(cap.get(cv2.CAP_PROP_BUFFERSIZE)):
+        buffer_size = int(cap.get(cv2.CAP_PROP_BUFFERSIZE))
+        for _ in range(buffer_size):
             ret = cap.grab()
         
         # Now get the actual frame data
