@@ -42,12 +42,15 @@ def capture_image(filename="/tmp/frame.jpg"):
         print(f"✗ Camera capture failed: {e}")
         return None
 
-def decode_with_region_detection(image_path):
+def decode_with_region_detection(image_path, padding=5):
     try:
         image = cv2.imread(image_path)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                       cv2.THRESH_BINARY_INV, 11, 2)
+        thresh = cv2.adaptiveThreshold(
+            gray, 255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV, 11, 2
+        )
 
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         candidates = []
@@ -60,19 +63,21 @@ def decode_with_region_detection(image_path):
                 if area < 1000:
                     continue
 
-                region = gray[y:y+h, x:x+w]
+                # Add padding (with clipping to image boundaries)
+                x1 = max(x - padding, 0)
+                y1 = max(y - padding, 0)
+                x2 = min(x + w + padding, gray.shape[1])
+                y2 = min(y + h + padding, gray.shape[0])
+                region = gray[y1:y2, x1:x2]
+
                 candidates.append(region)
 
                 # 🟩 Draw rectangle on original image
-                cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
-
-                # 📢 Print box details
+                cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 print(f"→ Candidate at (x={x}, y={y}, w={w}, h={h})")
 
-        # 💾 Save debug image
         cv2.imwrite("/tmp/debug_regions.jpg", image)
 
-        # 🧠 Try decoding each candidate region
         for region in candidates:
             pil_img = Image.fromarray(region).convert("L")
             result = decode(pil_img)
