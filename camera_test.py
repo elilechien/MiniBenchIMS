@@ -3,7 +3,7 @@ import cv2
 import os
 import time
 import re
-from pylibdmtx.pylibdmtx import decode
+import uuid
 
 def parse_digikey_data_matrix(raw: str):
     if raw.startswith("[)>06"):
@@ -41,23 +41,36 @@ def find_candidates(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                    cv2.THRESH_BINARY_INV, 11, 2)
-    
+
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
     candidates = []
-    
+
     for i in range(1, num_labels):  # skip background
         x, y, w, h, area = stats[i]
         aspect = w / h
         if 20 < w < 400 and 0.8 < aspect < 1.2:  # roughly square
-            candidates.append(image[y:y+h, x:x+w])
+            region = image[y:y+h, x:x+w]
+            candidates.append((region, (x, y, w, h)))
             cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
     cv2.imwrite("/tmp/debug_bboxes.jpg", image)
     return candidates
 
+def decode_with_dmtx(region_image):
+    temp_path = f"/tmp/crop_{uuid.uuid4().hex}.jpg"
+    cv2.imwrite(temp_path, region_image)
+    try:
+        output = subprocess.check_output(["dmtxread", temp_path], stderr=subprocess.DEVNULL, timeout=1)
+        os.remove(temp_path)
+        return output.decode("utf-8").strip()
+    except subprocess.TimeoutExpired:
+        return None
+    except subprocess.CalledProcessError:
+        return None
+
 def main():
     print("DigiKey Data Matrix Scanner\nPress Enter to capture and scan...\n")
-    
+
     while True:
         input("➤ Press Enter to scan...")
         img_path = capture_image()
@@ -70,25 +83,20 @@ def main():
         print(f"Found {len(candidates)} candidate region(s).")
 
         found = False
-        for i, region in enumerate(candidates):
-            gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
-            result = decode(gray)
-            if not result:
+        for i, (region, (x, y, w, h)) in enumerate(candidates):
+            raw = decode_with_dmtx(region)
+            if not raw:
                 continue
-            try:
-                raw = result[0].data.decode("utf-8")
-                print(f"\n✓ Data Matrix Found: {repr(raw)}")
-                parsed = parse_digikey_data_matrix(raw)
-                if parsed:
-                    print("✓ Parsed Digi-Key Info:")
-                    for k, v in parsed.items():
-                        print(f"  {k}: {v}")
-                else:
-                    print("✗ Not a Digi-Key format.")
-                found = True
-                break
-            except Exception as e:
-                print(f"✗ Decode error: {e}")
+            print(f"\n✓ Data Matrix Found: {repr(raw)}")
+            parsed = parse_digikey_data_matrix(raw)
+            if parsed:
+                print("✓ Parsed Digi-Key Info:")
+                for k, v in parsed.items():
+                    print(f"  {k}: {v}")
+            else:
+                print("✗ Not a Digi-Key format.")
+            found = True
+            break
 
         if not found:
             print("✗ No valid Data Matrix detected.\n")
