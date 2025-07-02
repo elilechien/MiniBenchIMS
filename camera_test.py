@@ -76,7 +76,7 @@ try:
             decoded_info = []
             points = None
         
-        if retval:
+        if retval and decoded_info is not None:
             for i, raw in enumerate(decoded_info):
                 if raw:  # Make sure the decoded string is not empty
                     print(f"Raw: {repr(raw)}")
