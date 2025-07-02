@@ -57,7 +57,7 @@ def decode_with_region_detection(image_path):
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         candidates = []
 
-        for cnt in contours:
+        for i, cnt in enumerate(contours):
             x, y, w, h = cv2.boundingRect(cnt)
             aspect = w / float(h)
             region = gray[y:y+h, x:x+w]
@@ -78,6 +78,11 @@ def decode_with_region_detection(image_path):
                 region = gray[y1:y2, x1:x2]
                 candidates.append(region)
 
+                # Save candidate region to file
+                candidate_path = f"/tmp/candidate_{i}.png"
+                cv2.imwrite(candidate_path, region)
+                print(f"💾 Saved candidate to {candidate_path}")
+
                 # Draw rectangle on original image
                 cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 print(f"→ Candidate at (x={x1}, y={y1}, w={x2 - x1}, h={y2 - y1})")
@@ -85,7 +90,7 @@ def decode_with_region_detection(image_path):
         cv2.imwrite("/tmp/debug_regions.jpg", image)
 
         for region in candidates:
-            pil_img = Image.fromarray(region).convert("L")
+            pil_img = Image.fromarray(region)
             result = decode(pil_img)
             if result:
                 return result[0].data.decode("utf-8")
