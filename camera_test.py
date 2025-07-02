@@ -54,15 +54,24 @@ def capture_single_frame():
     else:
         return False, None
 
-print("Data Matrix Scanner - Optimized for 1.5s decode time")
+print("Data Matrix Scanner - SSH/Headless Mode")
 print("Controls:")
-print("  SPACE - Capture and scan")
-print("  'c' - Continuous mode")
-print("  'q' - Quit")
+print("  ENTER - Capture and scan")
+print("  'c' + ENTER - Toggle continuous mode")
+print("  'q' + ENTER - Quit")
 print()
 
 continuous_mode = False
 last_scan_time = 0
+
+def get_user_input():
+    """Non-blocking input check"""
+    import select
+    import sys
+    
+    if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
+        return sys.stdin.readline().strip()
+    return None
 
 try:
     while True:
@@ -74,29 +83,22 @@ try:
             # In continuous mode, respect the 1.5s decode time + small buffer
             if current_time - last_scan_time >= 2.0:
                 should_scan = True
+                print("Auto-scanning...")
         else:
-            # Manual mode - show live preview
-            ret, frame = capture_single_frame()
-            if ret:
-                # Show preview with instruction
-                display_frame = frame.copy()
-                cv2.putText(display_frame, "Press SPACE to scan", (10, 30), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                cv2.putText(display_frame, "Press 'c' for continuous", (10, 70), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                cv2.imshow('Preview', display_frame)
-        
-        # Handle keyboard input
-        key = cv2.waitKey(100) & 0xFF
-        if key == ord('q'):
-            break
-        elif key == ord('c'):
-            continuous_mode = not continuous_mode
-            mode_text = "CONTINUOUS" if continuous_mode else "MANUAL"
-            print(f"Switched to {mode_text} mode")
-            last_scan_time = current_time - 2.0  # Allow immediate scan
-        elif key == ord(' '):  # Spacebar
-            should_scan = True
+            # Manual mode - wait for input
+            print("Ready to scan - press ENTER...")
+            user_input = input().strip()
+            
+            if user_input == 'q':
+                break
+            elif user_input == 'c':
+                continuous_mode = not continuous_mode
+                mode_text = "CONTINUOUS" if continuous_mode else "MANUAL"
+                print(f"Switched to {mode_text} mode")
+                last_scan_time = current_time - 2.0  # Allow immediate scan
+                continue
+            else:  # Enter or any other input
+                should_scan = True
         
         if should_scan:
             print("Capturing...")
@@ -117,9 +119,9 @@ try:
             # Apply sharpening to reduce blur
             enhanced = quick_sharpen(gray)
             
-            # Show what we're scanning
-            cv2.imshow('Scanning...', enhanced)
-            cv2.waitKey(1)  # Force display update
+            # Save debug image (since we can't display it)
+            cv2.imwrite('/tmp/debug_enhanced.jpg', enhanced)
+            print(f"Debug image saved: /tmp/debug_enhanced.jpg ({enhanced.shape[1]}x{enhanced.shape[0]})")
             
             # Start decode
             print("Decoding Data Matrix...")
@@ -183,13 +185,8 @@ try:
                 print(f"✗ No Data Matrix detected ({total_time:.3f}s)")
             
             last_scan_time = time.time()
-            
-            # In manual mode, show result briefly
-            if not continuous_mode:
-                time.sleep(1)
 
 except KeyboardInterrupt:
     print("\nStopped by user.")
 finally:
-    cv2.destroyAllWindows()
     print("Scanner closed.")
