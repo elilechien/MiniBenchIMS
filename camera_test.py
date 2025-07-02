@@ -2,7 +2,8 @@ import cv2
 import re
 import subprocess
 import time
-from pyzbar.pyzbar import decode
+from pyzbar.pyzbar import decode as pyzbar_decode
+from pylibdmtx.pylibdmtx import decode as dmtx_decode
 from datetime import datetime
 
 def parse_digikey_data_matrix(raw: str):
@@ -59,15 +60,48 @@ try:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         start = time.time()
-        results = decode(gray)
+        
+        # Try pyzbar first (for QR codes, linear barcodes)
+        pyzbar_results = pyzbar_decode(gray)
+        
+        # Try pylibdmtx for Data Matrix codes
+        dmtx_results = dmtx_decode(gray)
+        
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
         
-        if results:
-            for result in results:
+        # Process pyzbar results
+        if pyzbar_results:
+            for result in pyzbar_results:
                 raw = result.data.decode("utf-8")
-                print(f"\n=== BARCODE DETECTED ===")
+                print(f"\n=== PYZBAR BARCODE DETECTED ===")
                 print(f"Type: {result.type}")
+                print(f"Raw data: {repr(raw)}")
+                print(f"Raw bytes: {result.data}")
+                
+                # Show each character with its hex value for debugging
+                print("Character breakdown:")
+                for i, char in enumerate(raw):
+                    print(f"  [{i:2d}]: '{char}' (0x{ord(char):02x})")
+                
+                parsed = parse_digikey_data_matrix(raw)
+                print(f"Parsed fields: {parsed}")
+                
+                if "digi_key_pn" in parsed:
+                    print("✓ DIGIKEY DATAMATRIX DETECTED:")
+                    print(parsed)
+                else:
+                    print("✗ Not recognized as Digikey format")
+                print("=" * 30)
+                
+                # Add delay to avoid spam
+                time.sleep(2)
+        
+        # Process pylibdmtx results (Data Matrix)
+        if dmtx_results:
+            for result in dmtx_results:
+                raw = result.data.decode("utf-8")
+                print(f"\n=== DATA MATRIX DETECTED ===")
                 print(f"Raw data: {repr(raw)}")
                 print(f"Raw bytes: {result.data}")
                 
