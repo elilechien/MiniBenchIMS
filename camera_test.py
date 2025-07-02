@@ -32,61 +32,83 @@ def quick_sharpen(gray):
     kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]], dtype=np.float32)
     return cv2.filter2D(gray, -1, kernel)
 
-def capture_single_frame():
-    """Optimized single frame capture"""
-    result = subprocess.run([
-        "libcamera-still",
-        "--immediate",
-        "--width", "800",  # Good balance for detection
-        "--height", "600", 
-        "--encoding", "jpg",
-        "--quality", "90",
-        "--shutter", "4000",  # Fast enough to avoid blur
-        "--gain", "1.5",
-        "--awb", "auto",
-        "--denoise", "cdn_off",  # Keep sharp
-        "--output", "/tmp/capture.jpg"
-    ], stderr=subprocess.DEVNULL)
-    
-    if result.returncode == 0:
-        frame = cv2.imread("/tmp/capture.jpg")
-        return True, frame
-    else:
-        return False, None
+# Start video stream for continuous autofocus
+print("Starting libcamera video stream for proper focus...")
+cam_stream = subprocess.Popen([
+    "libcamera-vid",
+    "-t", "0",
+    "--width", "800",
+    "--height", "600",
+    "--framerate", "10",
+    "--codec", "mjpeg",
+    "--shutter", "4000",  # Fast shutter to reduce blur
+    "--gain", "1.5",
+    "--awb", "auto",
+    "--autofocus-mode", "continuous",  # Continuous autofocus
+    "--lens-position", "0.0",  # Let autofocus work
+    "--denoise", "cdn_off",
+    "--output", "/dev/video10"
+], stderr=subprocess.DEVNULL)
 
-print("Data Matrix Scanner - SSH/Headless Mode")
+time.sleep(3)  # Give time for camera to start and focus
+
+cap = cv2.VideoCapture("/dev/video10")
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+cap.set(cv2.CAP_PROP_FPS, 10)
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
+
+if not cap.isOpened():
+    print("Failed to open camera.")
+    cam_stream.terminate()
+    exit()
+
+print("Data Matrix Scanner - SSH Mode with Video Stream")
 print("Controls:")
-print("  ENTER - Capture and scan")
+print("  ENTER - Capture and scan current frame")
 print("  'c' + ENTER - Toggle continuous mode")
 print("  'q' + ENTER - Quit")
 print()
 
 continuous_mode = False
 last_scan_time = 0
+frame_count = 0
 
-def get_user_input():
-    """Non-blocking input check"""
-    import select
-    import sys
-    
-    if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
-        return sys.stdin.readline().strip()
-    return None
+def save_debug_frame(frame, filename_suffix=""):
+    """Save frame for debugging"""
+    timestamp = int(time.time())
+    filename = f"/tmp/debug_frame{filename_suffix}_{timestamp}.jpg"
+    cv2.imwrite(filename, frame)
+    print(f"Debug frame saved: {filename}")
+    return filename
 
 try:
     while True:
+        # Always read frames to keep video stream flowing
+        ret, frame = cap.read()
+        if not ret:
+            print("Failed to read frame")
+            time.sleep(0.1)
+            continue
+        
+        frame_count += 1
         current_time = time.time()
         should_scan = False
         
+        # Save occasional debug frames to show focus quality
+        if frame_count % 50 == 0:  # Every 50 frames
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            save_debug_frame(gray, "_focus_check")
+            print(f"Focus check frame saved (frame #{frame_count})")
+        
         # Check if we should scan
         if continuous_mode:
-            # In continuous mode, respect the 1.5s decode time + small buffer
-            if current_time - last_scan_time >= 2.0:
+            # In continuous mode, respect decode time + buffer
+            if current_time - last_scan_time >= 2.5:  # Bit more buffer for video
                 should_scan = True
-                print("Auto-scanning...")
+                print("Auto-scanning current frame...")
         else:
             # Manual mode - wait for input
-            print("Ready to scan - press ENTER...")
+            print("Frame ready - press ENTER to scan...")
             user_input = input().strip()
             
             if user_input == 'q':
@@ -95,46 +117,34 @@ try:
                 continuous_mode = not continuous_mode
                 mode_text = "CONTINUOUS" if continuous_mode else "MANUAL"
                 print(f"Switched to {mode_text} mode")
-                last_scan_time = current_time - 2.0  # Allow immediate scan
+                last_scan_time = current_time - 3.0  # Allow immediate scan
                 continue
             else:  # Enter or any other input
                 should_scan = True
         
         if should_scan:
-            print("Capturing...")
-            capture_start = time.time()
+            print("Processing current frame...")
             
-            # Capture frame
-            ret, frame = capture_single_frame()
-            if not ret:
-                print("Capture failed!")
-                continue
-            
-            capture_time = time.time() - capture_start
-            print(f"Capture: {capture_time:.3f}s")
-            
-            # Process image
+            # Process the current frame
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
-            # Apply sharpening to reduce blur
+            # Apply sharpening
             enhanced = quick_sharpen(gray)
             
-            # Save debug image (since we can't display it)
-            cv2.imwrite('/tmp/debug_enhanced.jpg', enhanced)
-            print(f"Debug image saved: /tmp/debug_enhanced.jpg ({enhanced.shape[1]}x{enhanced.shape[0]})")
-            
-            # Start decode
-            print("Decoding Data Matrix...")
-            decode_start = time.time()
-            
-            # Use 50% size for speed
+            # Use 50% size for faster detection
             small_enhanced = cv2.resize(enhanced, None, fx=0.5, fy=0.5)
-            print(f"  Processing at 50% size ({small_enhanced.shape[1]}x{small_enhanced.shape[0]})...")
             
-            dmtx_results = dmtx_decode(small_enhanced, timeout=2000)  # 2 second timeout
+            # Save debug images
+            debug_original = save_debug_frame(gray, "_original")
+            debug_enhanced = save_debug_frame(enhanced, "_enhanced")
+            debug_small = save_debug_frame(small_enhanced, "_small")
             
+            print(f"Processing {small_enhanced.shape[1]}x{small_enhanced.shape[0]} image...")
+            
+            # Decode
+            decode_start = time.time()
+            dmtx_results = dmtx_decode(small_enhanced, timeout=2000)
             decode_time = time.time() - decode_start
-            total_time = decode_time + capture_time
             
             if dmtx_results:
                 for result in dmtx_results:
@@ -142,7 +152,7 @@ try:
                         raw = result.data.decode("utf-8")
                         
                         print(f"\n{'='*50}")
-                        print(f"✓ DATA MATRIX FOUND! (Total: {total_time:.3f}s)")
+                        print(f"✓ DATA MATRIX FOUND! ({decode_time:.3f}s)")
                         print(f"Raw: {repr(raw)}")
                         
                         parsed = parse_digikey_data_matrix(raw)
@@ -161,11 +171,13 @@ try:
                         print(f"Unicode decode error")
                         continue
             else:
-                print(f"✗ No Data Matrix detected ({total_time:.3f}s)")
+                print(f"✗ No Data Matrix detected ({decode_time:.3f}s)")
             
             last_scan_time = time.time()
 
 except KeyboardInterrupt:
     print("\nStopped by user.")
 finally:
-    print("Scanner closed.")
+    cap.release()
+    cam_stream.terminate()
+    print("Camera stream stopped.")
