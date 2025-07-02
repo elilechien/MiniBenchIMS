@@ -1,12 +1,9 @@
 import cv2
-from datetime import datetime
-from pyzbar.pyzbar import decode
-import numpy as np
 import re
 import subprocess
 import time
-from PIL import Image
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from pyzbar.pyzbar import decode
+from datetime import datetime
 
 def parse_digikey_data_matrix(raw: str):
     if raw.startswith("[)>06"):
@@ -28,9 +25,6 @@ def parse_digikey_data_matrix(raw: str):
             result["mid"] = field[3:]
     return result
 
-def try_decode(pil_img):
-    return decode(pil_img)
-
 # Start libcamera-vid to stream to v4l2loopback
 cam_stream = subprocess.Popen([
     "libcamera-vid",
@@ -38,7 +32,7 @@ cam_stream = subprocess.Popen([
     "--width", "640",
     "--height", "480",
     "--framerate", "5",
-    "--codec", "mjpeg",           # MJPEG is widely compatible
+    "--codec", "mjpeg",
     "--output", "/dev/video10"
 ])
 
@@ -52,8 +46,6 @@ if not cap.isOpened():
     print("Failed to open camera.")
     exit()
 
-executor = ThreadPoolExecutor(max_workers=1)
-
 try:
     while True:
         ret, frame = cap.read()
@@ -65,21 +57,13 @@ try:
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        resized = cv2.resize(gray, (640, 480))
-        pil_img = Image.fromarray(resized)
 
-        # Decode with timeout
         start = time.time()
-        future = executor.submit(try_decode, pil_img)
-        try:
-            results = future.result(timeout=0.5)
-        except TimeoutError:
-            print("Decode timed out.")
-            results = []
+        results = decode(gray)
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
 
-        if len(results):
+        if results:
             for result in results:
                 raw = result.data.decode("utf-8")
                 print(f"Raw: {repr(raw)}")
@@ -88,7 +72,6 @@ try:
                     print("DIGIKEY DATAMATRIX DETECTED:")
                     print(parsed)
 
-        #cv2.imshow("Live Feed", resized)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -99,5 +82,3 @@ finally:
     cap.release()
     cam_stream.terminate()
     cv2.destroyAllWindows()
-    executor.shutdown()
-
