@@ -40,7 +40,8 @@ cam_stream = subprocess.Popen([
 time.sleep(3)
 
 cap = cv2.VideoCapture("/dev/video10")
-cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce to 1 frame buffer
+cap.set(cv2.CAP_PROP_FPS, 5)  # Match the libcamera framerate
 
 print("Resolution:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
@@ -50,7 +51,12 @@ if not cap.isOpened():
 
 try:
     while True:
-        ret, frame = cap.read()
+        # Flush the buffer to get the most recent frame
+        for _ in range(cap.get(cv2.CAP_PROP_BUFFERSIZE)):
+            ret = cap.grab()
+        
+        # Now get the actual frame data
+        ret, frame = cap.retrieve()
         if not ret:
             print("Frame capture failed.")
             time.sleep(1)
@@ -67,6 +73,10 @@ try:
         
         # Enhance contrast
         small_gray = cv2.equalizeHist(small_gray)
+        
+        # Show the processed image for debugging
+        cv2.imshow('Original', gray)
+        cv2.imshow('Processed (small)', small_gray)
         
         start = time.time()
         
@@ -95,6 +105,8 @@ try:
                 
                 # Add delay to avoid spam
                 time.sleep(2)
+        else:
+            print("No Data Matrix detected")
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
