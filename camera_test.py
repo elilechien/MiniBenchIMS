@@ -2,6 +2,7 @@ import subprocess
 import os
 import re
 from PIL import Image
+from pylibdmtx.pylibdmtx import decode
 
 def parse_digikey_data_matrix(raw: str):
     if raw.startswith("[)>06"):
@@ -36,9 +37,8 @@ def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
         ], check=True)
 
         if os.path.exists(filename):
-            # Convert to grayscale and resize to speed up decoding
             img = Image.open(filename).convert("L")
-            img.thumbnail((480, 360))
+            img.thumbnail((480, 360))  # preserve aspect ratio
             img.save(resized)
             return resized
         return None
@@ -48,17 +48,13 @@ def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
 
 def decode_with_dmtx(image_path):
     try:
-        output = subprocess.check_output(["dmtxread", image_path], stderr=subprocess.DEVNULL, timeout=10)
-        decoded = output.decode("utf-8").strip()
-        return decoded if decoded else None
-    except subprocess.TimeoutExpired:
-        print("✗ dmtxread timed out.")
-        return None
-    except subprocess.CalledProcessError:
-        print("✗ dmtxread did not find a Data Matrix.")
+        img = Image.open(image_path).convert("L")
+        results = decode(img)
+        if results:
+            return results[0].data.decode("utf-8")
         return None
     except Exception as e:
-        print(f"✗ Unexpected decode error: {e}")
+        print(f"✗ pylibdmtx decode error: {e}")
         return None
 
 def main():
@@ -72,7 +68,7 @@ def main():
                 print("✗ Image capture failed.\n")
                 continue
 
-            print("✓ Captured and resized image, running dmtxread...")
+            print("✓ Captured and resized image, decoding...")
             raw = decode_with_dmtx(img_path)
             if not raw:
                 print("✗ No valid Data Matrix detected.\n")
