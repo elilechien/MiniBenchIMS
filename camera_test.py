@@ -38,6 +38,7 @@ def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
 
         if os.path.exists(filename):
             img = Image.open(filename).convert("L")
+            img = img.point(lambda x: 0 if x < 128 else 255, mode="1")
             img.thumbnail((480, 360))  # preserve aspect ratio
             img.save(resized)
             return resized
