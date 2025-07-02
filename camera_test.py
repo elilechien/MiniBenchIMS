@@ -48,7 +48,7 @@ def capture_image(filename="/tmp/frame.jpg", resized="/tmp/frame_small.jpg"):
 
 def decode_with_dmtx(image_path):
     try:
-        output = subprocess.check_output(["dmtxread", image_path], stderr=subprocess.DEVNULL, timeout=2)
+        output = subprocess.check_output(["dmtxread", image_path], stderr=subprocess.DEVNULL, timeout=10)
         decoded = output.decode("utf-8").strip()
         return decoded if decoded else None
     except subprocess.TimeoutExpired:
