@@ -2,7 +2,6 @@ import cv2
 import re
 import subprocess
 import time
-from pyzbar.pyzbar import decode
 from datetime import datetime
 
 def parse_digikey_data_matrix(raw: str):
@@ -25,6 +24,9 @@ def parse_digikey_data_matrix(raw: str):
             result["mid"] = field[3:]
     return result
 
+# Initialize the barcode detector
+detector = cv2.barcode.BarcodeDetector()
+
 # Start libcamera-vid to stream to v4l2loopback
 cam_stream = subprocess.Popen([
     "libcamera-vid",
@@ -40,6 +42,7 @@ time.sleep(3)
 
 cap = cv2.VideoCapture("/dev/video10")
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+
 print("Resolution:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 if not cap.isOpened():
@@ -49,35 +52,41 @@ if not cap.isOpened():
 try:
     while True:
         ret, frame = cap.read()
-
         if not ret:
             print("Frame capture failed.")
             time.sleep(1)
             continue
-
+        
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+        
         start = time.time()
-        results = decode(gray)
+        retval, decoded_info, decoded_type, points = detector.detectAndDecode(gray)
         elapsed = time.time() - start
         print(f"Decode time: {elapsed:.3f}s")
-
-        if results:
-            for result in results:
-                raw = result.data.decode("utf-8")
-                print(f"Raw: {repr(raw)}")
-                parsed = parse_digikey_data_matrix(raw)
-                if "digi_key_pn" in parsed:
-                    print("DIGIKEY DATAMATRIX DETECTED:")
-                    print(parsed)
-
+        
+        if retval:
+            for i, raw in enumerate(decoded_info):
+                if raw:  # Make sure the decoded string is not empty
+                    print(f"Raw: {repr(raw)}")
+                    parsed = parse_digikey_data_matrix(raw)
+                    if "digi_key_pn" in parsed:
+                        print("DIGIKEY DATAMATRIX DETECTED:")
+                        print(parsed)
+                    
+                    # Optional: Draw bounding box around detected barcode
+                    if points is not None and len(points) > i:
+                        pts = points[i].astype(int)
+                        cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
+        
+        # Optional: Display the frame with detected barcodes highlighted
+        # cv2.imshow('Barcode Scanner', frame)
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
 except KeyboardInterrupt:
     print("Stopped by user.")
-
 finally:
     cap.release()
     cam_stream.terminate()
