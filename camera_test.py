@@ -46,7 +46,7 @@ def capture_single_frame():
         "--awb", "auto",
         "--denoise", "cdn_off",  # Keep sharp
         "--output", "/tmp/capture.jpg"
-    ], capture_output=True, stderr=subprocess.DEVNULL)
+    ], stderr=subprocess.DEVNULL)
     
     if result.returncode == 0:
         frame = cv2.imread("/tmp/capture.jpg")
